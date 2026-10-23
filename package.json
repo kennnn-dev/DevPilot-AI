@@ -13,9 +13,8 @@
     "start": "vite",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "package": "npm run build && electron-builder --dir",
-    "package:appimage": "npm run build && electron-builder --linux AppImage",
-    "package:deb": "npm run build && electron-builder --linux deb",
+    "package": "npm run package:deb",
+    "package:deb": "npm run build && electron-builder --linux deb && node -e \"fs.rmSync('release/linux-unpacked',{recursive:true,force:true})\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -56,7 +55,6 @@
     ],
     "linux": {
       "target": [
-        "AppImage",
         "deb"
       ],
       "category": "Development",
