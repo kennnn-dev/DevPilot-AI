@@ -1,8 +1,9 @@
-import { ipcMain } from 'electron';
+import { ipcMain, BrowserWindow } from 'electron';
 import path from 'node:path';
 import { IPC_CHANNELS } from '../../shared/ipcChannels';
 import type { GitStatusResult, GitDiffResult, IPCResult } from '../../shared/types';
 import { gitService } from '../git/gitService';
+import { startWatchingRepo } from '../git/repoWatcher';
 
 /**
  * Validates a repository path string.
@@ -39,6 +40,7 @@ export function validateStagedDiffInput(payload: unknown): {
   repoPath?: string;
   filePath?: string;
   oldPath?: string;
+  scope?: 'staged' | 'unstaged' | 'untracked';
   error?: string;
 } {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -94,12 +96,18 @@ export function validateStagedDiffInput(payload: unknown): {
   }
 
   const resolvedRepo = path.resolve(repoPath.trim());
+  const { scope } = payload as Record<string, unknown>;
+  let validScope: 'staged' | 'unstaged' | 'untracked' | undefined = undefined;
+  if (scope === 'staged' || scope === 'unstaged' || scope === 'untracked') {
+    validScope = scope;
+  }
 
   return {
     isValid: true,
     repoPath: resolvedRepo,
     filePath: filePath.trim(),
     oldPath: typeof oldPath === 'string' ? oldPath.trim() : undefined,
+    scope: validScope,
   };
 }
 
@@ -126,7 +134,18 @@ export function registerGitHandlers(): void {
       }
 
       try {
-        return await gitService.getStatus(validation.resolvedPath!);
+        const result = await gitService.getStatus(validation.resolvedPath!);
+        if (result.success) {
+          startWatchingRepo(validation.resolvedPath!, (changedRepo) => {
+            const windows = BrowserWindow?.getAllWindows?.() ?? [];
+            for (const win of windows) {
+              if (!win.isDestroyed()) {
+                win.webContents.send('git:repo-changed', { repoPath: changedRepo });
+              }
+            }
+          });
+        }
+        return result;
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.error('[GitHandlers] getStatus unexpected error:', message);
@@ -154,7 +173,8 @@ export function registerGitHandlers(): void {
         return await gitService.getStagedDiff(
           validation.repoPath!,
           validation.filePath!,
-          validation.oldPath
+          validation.oldPath,
+          validation.scope
         );
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);

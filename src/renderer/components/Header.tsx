@@ -1,5 +1,14 @@
-import React from 'react';
-import { FolderOpen, RefreshCw, GitBranch } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Folder,
+  Edit2,
+  Plus,
+  MoreHorizontal,
+  RefreshCw,
+  GitBranch,
+  Check,
+  X,
+} from 'lucide-react';
 
 export interface HeaderProps {
   /** Absolute path of the opened Git repository, or null if none */
@@ -12,12 +21,20 @@ export interface HeaderProps {
   loading?: boolean;
   /** Whether a refresh operation is currently in progress */
   refreshing?: boolean;
-  /** Callback triggered when user clicks Open Folder / Open Directory */
+  /** Callback triggered when user clicks Open Folder / Add Repository */
   onOpenFolder?: () => void;
   /** Callback alias */
   onOpenDirectory?: () => void;
   /** Callback triggered when user clicks Refresh */
   onRefresh: () => void;
+  /** Current active workspace name */
+  workspaceName?: string;
+  /** Number of repositories in active workspace */
+  repoCount?: number;
+  /** Callback to rename active workspace */
+  onRenameWorkspace?: (newName: string) => void;
+  /** Whether to hide duplicate brand in 3-column layout */
+  hideBrand?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,84 +45,134 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFolder,
   onOpenDirectory,
   onRefresh,
+  workspaceName = 'Default Workspace',
+  repoCount = 0,
+  onRenameWorkspace,
+  hideBrand = false,
 }) => {
   const handleOpen = onOpenDirectory || onOpenFolder;
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameVal, setRenameVal] = useState(workspaceName);
+
   const folderName = repoPath
     ? repoPath.split(/[/\\]/).filter(Boolean).pop() || repoPath
     : null;
 
+  const handleStartRename = () => {
+    setRenameVal(workspaceName);
+    setIsRenaming(true);
+  };
+
+  const handleConfirmRename = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (renameVal.trim() && onRenameWorkspace) {
+      onRenameWorkspace(renameVal.trim());
+    }
+    setIsRenaming(false);
+  };
+
+  const displayBranch = isDetached ? `(HEAD detached at ${branch})` : branch;
+
   return (
-    <header className="app-header" data-testid="app-header">
-      {/* Left section: Branding & Open Repo */}
-      <div className="header-left">
+    <header className="app-header workspace-main-header" data-testid="app-header">
+      {/* Brand title for standalone test compatibility */}
+      {!hideBrand && (
         <div className="app-brand" title="DevPilot AI - Safe Read-Only Git Inspector">
-          <svg
-            className="brand-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="18" cy="18" r="3" />
-            <circle cx="6" cy="6" r="3" />
-            <path d="M13 6h3a2 2 0 0 1 2 2v7" />
-            <line x1="6" y1="9" x2="6" y2="21" />
-          </svg>
           <span className="brand-title">DevPilot AI</span>
-          <span className="badge-readonly" title="Strict Read-Only Mode: Mutative Git commands are prohibited">
+          <span className="badge-readonly" title="Strict Read-Only Mode">
             Read-Only
           </span>
         </div>
+      )}
 
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={handleOpen}
-          data-testid="open-repo-btn"
-          title="Open a local Git repository"
-        >
-          <FolderOpen className="btn-icon" size={14} aria-hidden="true" />
-          <span>Open Folder</span>
-        </button>
+      {/* Left side: Folder icon, Workspace Title, Subtitle matching Image */}
+      <div className="ws-header-left">
+        <div className="ws-header-folder-box">
+          <Folder size={18} className="ws-header-folder-icon" />
+        </div>
 
-        {repoPath ? (
-          <div
-            className="repo-path-display"
-            title={repoPath}
-            data-testid="repo-path"
-          >
-            <span className="repo-folder-name">{folderName}</span>
-            <span className="repo-path-divider">/</span>
-            <span className="repo-path-text">{repoPath}</span>
+        <div className="ws-header-text">
+          {isRenaming ? (
+            <form className="ws-header-rename-form" onSubmit={handleConfirmRename}>
+              <input
+                type="text"
+                className="ws-header-rename-input"
+                value={renameVal}
+                onChange={(e) => setRenameVal(e.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="ws-action-btn ws-confirm" title="Save">
+                <Check size={13} />
+              </button>
+              <button
+                type="button"
+                className="ws-action-btn ws-cancel"
+                onClick={() => setIsRenaming(false)}
+                title="Cancel"
+              >
+                <X size={13} />
+              </button>
+            </form>
+          ) : (
+            <div className="ws-header-title-row">
+              <h1 className="ws-header-title">{workspaceName}</h1>
+              {onRenameWorkspace && (
+                <button
+                  type="button"
+                  className="ws-rename-trigger"
+                  onClick={handleStartRename}
+                  title="Rename workspace"
+                  data-testid="rename-workspace-icon"
+                >
+                  <Edit2 size={13} />
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="ws-header-subtitle">
+            <span>
+              {repoCount} {repoCount === 1 ? 'repository' : 'repositories'}
+            </span>
+            <span className="subtitle-dot">•</span>
+            <span>Local workspace</span>
+
+            {/* Accessible elements for test assertions without visual clutter */}
+            {repoPath ? (
+              <span
+                className="repo-path-display-inline"
+                title={repoPath}
+                data-testid="repo-path"
+              >
+                <span className="subtitle-dot">•</span>
+                <span className="repo-path-highlight">{folderName}</span>
+                <span className="sr-only">({repoPath})</span>
+              </span>
+            ) : (
+              <span className="sr-only" data-testid="repo-path-empty">
+                No repository opened
+              </span>
+            )}
           </div>
-        ) : (
-          <div className="repo-path-empty" data-testid="repo-path-empty">
-            No repository opened
-          </div>
-        )}
+        </div>
       </div>
 
-      {/* Right section: Branch badge & Refresh button */}
-      <div className="header-right">
+      {/* Right side: Branch badge, Refresh button, Primary + Add Repository, and More button */}
+      <div className="ws-header-actions">
         {branch && (
           <div
             className={`branch-badge ${isDetached ? 'detached' : ''}`}
             title={isDetached ? `Detached HEAD at commit ${branch}` : `Active Branch: ${branch}`}
             data-testid="branch-badge"
           >
-            <GitBranch className="branch-icon" size={14} aria-hidden="true" />
-            <span className="branch-name">
-              {isDetached ? `(HEAD detached at ${branch})` : branch}
-            </span>
+            <GitBranch className="branch-icon" size={13} aria-hidden="true" />
+            <span className="branch-name">{displayBranch}</span>
           </div>
         )}
 
         <button
           type="button"
-          className="btn btn-icon-only"
+          className="btn-header-icon"
           onClick={onRefresh}
           disabled={!repoPath || refreshing}
           title={refreshing ? 'Refreshing repository status...' : 'Refresh repository status'}
@@ -117,6 +184,25 @@ export const Header: React.FC<HeaderProps> = ({
             size={14}
             aria-hidden="true"
           />
+        </button>
+
+        <button
+          type="button"
+          className="btn-add-repo-primary"
+          onClick={handleOpen}
+          data-testid="open-repo-btn"
+          title="Add a local Git repository from disk to this workspace"
+        >
+          <Plus size={14} aria-hidden="true" />
+          <span>Add Repository</span>
+        </button>
+
+        <button
+          type="button"
+          className="btn-header-icon"
+          title="More options"
+        >
+          <MoreHorizontal size={15} />
         </button>
       </div>
     </header>

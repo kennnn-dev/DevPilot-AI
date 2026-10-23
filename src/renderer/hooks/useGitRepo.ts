@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   GitFileStatus,
   GitDiffResult,
@@ -48,6 +48,10 @@ export interface UseGitRepoActions {
   handleSelectFile: (file: GitFileStatus) => Promise<void>;
   /** Clears the current error state */
   handleDismissError: () => void;
+  /** Clears current repository state and resets to empty */
+  clearRepo: () => void;
+  /** Deselects currently selected file and closes diff viewer */
+  deselectFile: () => void;
 }
 
 export type UseGitRepoReturn = UseGitRepoState & UseGitRepoActions;
@@ -75,6 +79,9 @@ export function useGitRepo(): UseGitRepoReturn {
   // Ref keeping track of current selected file across asynchronous closures
   const selectedFileRef = useRef<GitFileStatus | null>(null);
   selectedFileRef.current = selectedFile;
+  // Ref keeping track of active diff result across asynchronous closures
+  const diffResultRef = useRef<GitDiffResult | null>(null);
+  diffResultRef.current = diffResult;
   // Ref keeping track of current repository path
   const repoPathRef = useRef<string | null>(null);
   repoPathRef.current = repoPath;
@@ -155,10 +162,10 @@ export function useGitRepo(): UseGitRepoReturn {
   }, [loadRepoStatus]);
 
   /**
-   * Selects a staged file and queries its staged diff.
+   * Selects a file (staged, unstaged, or untracked) and queries its diff.
    */
   const handleSelectFile = useCallback(
-    async (file: GitFileStatus) => {
+    async (file: GitFileStatus, scope?: 'staged' | 'unstaged' | 'untracked') => {
       const currentRepo = repoPathRef.current;
       if (!currentRepo || !checkApiAvailable()) return;
 
@@ -166,15 +173,31 @@ export function useGitRepo(): UseGitRepoReturn {
       activeDiffFileRef.current = file.path;
       setDiffLoading(true);
 
+      const resolvedScope =
+        scope ||
+        (file.changeType === 'untracked' || file.statusCode === '??'
+          ? 'untracked'
+          : file.statusCode[0] !== ' ' && file.statusCode[0] !== '?'
+          ? 'staged'
+          : 'unstaged');
+
       try {
-        const res = await window.devPilot.getStagedDiff(currentRepo, file.path, file.oldPath);
+        const res =
+          scope === undefined && resolvedScope === 'staged'
+            ? await window.devPilot.getStagedDiff(currentRepo, file.path, file.oldPath)
+            : await window.devPilot.getStagedDiff(
+                currentRepo,
+                file.path,
+                file.oldPath,
+                resolvedScope
+              );
 
         // Guard against race conditions: verify this request matches latest selected file
         if (activeDiffFileRef.current === file.path) {
           if (res.success && res.data) {
             setDiffResult(res.data);
           } else {
-            setError(res.error || `Failed to fetch staged diff for ${file.path}`);
+            setError(res.error || `Failed to fetch diff for ${file.path}`);
             setDiffResult(null);
           }
         }
@@ -193,7 +216,7 @@ export function useGitRepo(): UseGitRepoReturn {
   );
 
   /**
-   * Refreshes repository status and synchronizes the active staged diff.
+   * Refreshes repository status and synchronizes the active diff.
    */
   const handleRefresh = useCallback(async () => {
     const currentRepo = repoPathRef.current;
@@ -208,20 +231,28 @@ export function useGitRepo(): UseGitRepoReturn {
         setBranch(res.data.branch);
         setIsDetached(res.data.isDetached);
         const newStaged = res.data.staged ?? [];
+        const newUnstaged = res.data.unstaged ?? [];
+        const newUntracked = res.data.untracked ?? [];
         setStaged(newStaged);
-        setUnstaged(res.data.unstaged ?? []);
-        setUntracked(res.data.untracked ?? []);
+        setUnstaged(newUnstaged);
+        setUntracked(newUntracked);
 
-        // Check if currently selected staged file still exists in refreshed staged list
+        // Check if currently selected file still exists in refreshed lists
         const currentPath = selectedFileRef.current?.path;
         if (currentPath) {
-          const matchingFile = newStaged.find((f) => f.path === currentPath);
+          const matchingFile =
+            newStaged.find((f) => f.path === currentPath) ||
+            newUnstaged.find((f) => f.path === currentPath) ||
+            newUntracked.find((f) => f.path === currentPath);
+
           if (matchingFile) {
             // Update selected file reference with fresh status
             setSelectedFile(matchingFile);
-            // Re-fetch staged diff
+            // Re-fetch diff in background without wiping active view (avoids flicker)
             activeDiffFileRef.current = matchingFile.path;
-            setDiffLoading(true);
+            if (!diffResultRef.current) {
+              setDiffLoading(true);
+            }
             try {
               const diffRes = await window.devPilot.getStagedDiff(
                 currentRepo,
@@ -262,10 +293,60 @@ export function useGitRepo(): UseGitRepoReturn {
   }, [refreshing, loading]);
 
   /**
+   * Real-time automatic tracking (Method B fs.watch + Window Focus auto-sync).
+   * Automatically refreshes Git status when files are edited externally (e.g. in VS Code)
+   * or when switching back to the DevPilot window.
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const onRepoChanged = () => {
+      handleRefresh();
+    };
+
+    const onWindowFocus = () => {
+      handleRefresh();
+    };
+
+    window.addEventListener('devpilot:repo-changed', onRepoChanged);
+    window.addEventListener('focus', onWindowFocus);
+
+    return () => {
+      window.removeEventListener('devpilot:repo-changed', onRepoChanged);
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [handleRefresh]);
+
+  /**
    * Clears active error notification.
    */
   const handleDismissError = useCallback(() => {
     setError(null);
+  }, []);
+
+  /**
+   * Clears current repository state and resets to empty.
+   */
+  const clearRepo = useCallback(() => {
+    setRepoPath(null);
+    setBranch('');
+    setIsDetached(false);
+    setStaged([]);
+    setUnstaged([]);
+    setUntracked([]);
+    setSelectedFile(null);
+    setDiffResult(null);
+    setError(null);
+    activeDiffFileRef.current = null;
+  }, []);
+
+  /**
+   * Deselects currently selected file and closes diff viewer.
+   */
+  const deselectFile = useCallback(() => {
+    setSelectedFile(null);
+    setDiffResult(null);
+    activeDiffFileRef.current = null;
   }, []);
 
   return {
@@ -286,5 +367,7 @@ export function useGitRepo(): UseGitRepoReturn {
     handleRefresh,
     handleSelectFile,
     handleDismissError,
+    clearRepo,
+    deselectFile,
   };
 }

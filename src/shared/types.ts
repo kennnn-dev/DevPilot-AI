@@ -4,6 +4,20 @@
  */
 
 /**
+ * A user-defined workspace grouping multiple local Git repositories.
+ */
+export interface Workspace {
+  /** Unique workspace identifier */
+  id: string;
+  /** Human-readable workspace name */
+  name: string;
+  /** Timestamp when created */
+  createdAt: number;
+  /** List of absolute directory paths to Git repositories in this workspace */
+  repoPaths: string[];
+}
+
+/**
  * Valid Git file change categories as defined in PROJECT.md.
  */
 export type GitFileChangeType =
@@ -115,6 +129,7 @@ export interface GetStagedDiffParams {
   repoPath: string;
   filePath: string;
   oldPath?: string;
+  scope?: 'staged' | 'unstaged' | 'untracked';
 }
 
 /**
@@ -134,15 +149,17 @@ export interface DevPilotAPI {
   getStatus: (repoPath: string) => Promise<IPCResult<GitStatusResult>>;
 
   /**
-   * Queries real staged diff for a specific file.
+   * Queries real staged or file diff for a specific file.
    * @param repoPath Absolute path to repository
-   * @param filePath Relative path to staged file
+   * @param filePath Relative path to file
    * @param oldPath Optional old path if file was renamed
+   * @param scope Optional diff scope: staged, unstaged, or untracked
    */
   getStagedDiff: (
     repoPath: string,
     filePath: string,
-    oldPath?: string
+    oldPath?: string,
+    scope?: 'staged' | 'unstaged' | 'untracked'
   ) => Promise<IPCResult<GitDiffResult>>;
 }
 

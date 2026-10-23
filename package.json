@@ -1,12 +1,21 @@
 {
   "name": "devpilot",
   "version": "0.1.0",
+  "description": "Safe, read-only real-time Git desktop inspector",
+  "author": {
+    "name": "DevPilot AI Team",
+    "email": "devpilot@example.com"
+  },
   "private": true,
   "type": "module",
   "main": "dist/main/index.js",
   "scripts": {
+    "start": "vite",
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "package": "npm run build && electron-builder --dir",
+    "package:appimage": "npm run build && electron-builder --linux AppImage",
+    "package:deb": "npm run build && electron-builder --linux deb",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -26,6 +35,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "electron": "^33.2.0",
+    "electron-builder": "^26.15.3",
     "eslint": "^9.15.0",
     "happy-dom": "^15.11.7",
     "typescript": "^5.6.3",
@@ -33,5 +43,36 @@
     "vite": "^6.0.0",
     "vite-plugin-electron": "^1.1.2",
     "vitest": "^3.0.0"
+  },
+  "build": {
+    "appId": "com.devpilot.ai",
+    "productName": "DevPilot AI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "maintainer": "devpilot@example.com",
+      "icon": "build/icon.png"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.developer-tools"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
   }
 }

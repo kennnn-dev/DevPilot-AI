@@ -4,11 +4,17 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { registerDialogHandlers } from './ipc/dialogHandlers';
 import { registerGitHandlers } from './ipc/gitHandlers';
+import { stopWatchingRepo } from './git/repoWatcher';
 
 // Resolve current directory reliably in both CJS and ESM environments
 const currentDir = typeof __dirname !== 'undefined'
   ? __dirname
   : path.dirname(fileURLToPath(import.meta.url));
+
+// Suppress harmless Linux Chromium GPU VSync warnings in terminal
+if (app?.commandLine?.appendSwitch) {
+  app.commandLine.appendSwitch('disable-gpu-vsync');
+}
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -34,6 +40,24 @@ export function resolvePreloadPath(): string {
 }
 
 /**
+ * Resolves the application window icon if available.
+ */
+export function resolveAppIconPath(): string | undefined {
+  const candidates = [
+    path.join(currentDir, '../../build/icon.png'),
+    path.join(currentDir, '../renderer/assets/logo.png'),
+    path.join(process.resourcesPath || '', 'icon.png'),
+    path.join(currentDir, 'icon.png'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Generates BrowserWindow options with strict security hardening:
  * - contextIsolation: true
  * - nodeIntegration: false
@@ -42,8 +66,10 @@ export function resolvePreloadPath(): string {
  * - allowRunningInsecureContent: false
  */
 export function getWindowSecurityOptions(preloadPath: string): Electron.BrowserWindowConstructorOptions {
+  const iconPath = resolveAppIconPath();
   return {
     title: 'DevPilot AI',
+    ...(iconPath ? { icon: iconPath } : {}),
     width: 1200,
     height: 800,
     minWidth: 900,
@@ -205,6 +231,7 @@ export function createWindow(): BrowserWindow {
 
   // Handle window close
   mainWindow.on('closed', () => {
+    stopWatchingRepo();
     mainWindow = null;
   });
 

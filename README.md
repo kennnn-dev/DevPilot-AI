@@ -8,18 +8,26 @@ DevPilot AI is a modern desktop application built with Electron, React, TypeScri
 
 ## Key Features
 
+- **Workspace Management**:
+  - Create, inline-rename, and delete workspaces.
+  - Add multiple local Git repositories from any directory into a single workspace.
+  - Workspaces and repository configurations persist automatically in local storage.
+  - Independent repository status: each repository tracks its own active branch, status, and changes cleanly without interference.
 - **Native Directory Selection**: Open any local Git repository using your operating system's native directory picker dialog.
 - **Real Working Tree Status Inspection**: Safely queries the underlying repository via Git CLI (zero mock data):
   - **Staged Changes**: Categorizes modified (`M`), added (`A`), deleted (`D`), renamed (`R`), and copied (`C`) changes.
   - **Unstaged Changes**: Tracks modified (`M`), deleted (`D`), and type-changed (`T`) working tree files.
-  - **Untracked Files**: Lists newly created, untracked files (`??`) using recursive porcelain scanning.
+  - **Untracked Files**: Lists newly created, untracked files (`??`) using recursive porcelain scanning without phantom deletions.
   - **Dual-Status Detection**: Accurately tracks files with concurrent index and working tree edits (e.g., `MM`, `AM`).
   - **Rename Source Tracking**: Displays previous file paths for renamed or moved files.
-- **Unified Staged Diff Viewer**:
-  - Displays actual `git diff --staged` output formatted with syntax-highlighted additions (`+`) and deletions (`-`).
-  - Dual line numbering gutters showing both old and new line numbers.
-  - Full support for unified hunk headers (e.g., `@@ -1,5 +1,6 @@`).
-  - Handles edge cases gracefully: binary files (`Binary file: diff not displayed`), 0-byte added files (`Empty file or no content changes`), and EOF missing newline markers (`\ No newline at end of file`).
+- **Unified Diff Viewer**:
+  - Inspect diffs for **all** changed files: Staged, Unstaged, and Untracked.
+  - Real line counters and syntax-highlighted additions (`+`) and deletions (`-`).
+  - Dual line numbering gutters showing old and new line numbers.
+  - Handles binary files and empty files cleanly.
+- **Resizable Studio Layout**:
+  - Center workspace expands to full width when no file is selected.
+  - Smooth vertical drag handle to resize the Diff Viewer side to your preferred width.
 - **VS Code Dark Modern Theme**: Designed to match the look, feel, and typography of Visual Studio Code Dark Modern editor theme.
 - **Read-Only Safety Guardrails**: Hardened architecture with zero mutative operations—no files are modified, staged, committed, or pushed.
 
@@ -54,13 +62,41 @@ npm install
 
 ---
 
-## Running in Development Mode
+## Running the Application
 
-Launch the application in development mode:
+### Option A: Run in Development Mode
+Launch DevPilot desktop window with hot-module reloading:
 
 ```bash
-npm run dev
+npm start
+# or: npm run dev
 ```
+
+### Option B: Build & Run as a Standalone Desktop App
+Package DevPilot into a true standalone desktop application that runs independently:
+
+```bash
+npm run package
+```
+This produces a compiled native binary in `./release/linux-unpacked/devpilot`. You can run it directly:
+```bash
+./release/linux-unpacked/devpilot
+```
+
+To create an installable package (`.AppImage` or `.deb`):
+```bash
+npm run package:appimage   # Generates standalone AppImage installer
+npm run package:deb        # Generates Debian/Ubuntu .deb installer
+```
+
+---
+
+## Real-Time Git Auto-Tracking (No Manual Refresh Required)
+
+DevPilot features automatic, real-time working tree change detection:
+- **VS Code & External Edits**: Whenever you edit or save files in VS Code, Git index updates and working tree changes are detected automatically in real-time.
+- **Branch Switches & Commits**: Switching branches or committing in your terminal automatically synchronizes DevPilot's status without needing to click the refresh button.
+- **Window Focus Synchronization**: The moment you switch back from VS Code or any other window, DevPilot verifies repository freshness.
 
 ### How Development Mode Works
 The `npm run dev` script executes `vite`, which leverages `vite-plugin-electron` to:

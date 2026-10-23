@@ -62,12 +62,13 @@ export class GitService {
   }
 
   /**
-   * Retrieves unified staged diff for a selected file.
+   * Retrieves unified staged or file diff for a selected file.
    */
   async getStagedDiff(
     repoPath: string,
     filePath: string,
-    oldPath?: string
+    oldPath?: string,
+    scope?: 'staged' | 'unstaged' | 'untracked'
   ): Promise<IPCResult<GitDiffResult>> {
     // Step 1: Validate repository
     const validation = await validateGitRepository(repoPath);
@@ -85,6 +86,7 @@ export class GitService {
         repoPath: workingRoot,
         filePath,
         oldPath,
+        scope,
       });
 
       return {

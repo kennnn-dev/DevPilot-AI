@@ -1,5 +1,5 @@
 import React from 'react';
-import { FolderGit2, CheckCircle2, FileText } from 'lucide-react';
+import { FolderGit2, CheckCircle2, FileCode, Plus } from 'lucide-react';
 
 export type EmptyStateMode = 'no-repo' | 'clean-tree' | 'no-file-selected';
 
@@ -23,22 +23,25 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   if (mode === 'no-repo') {
     return (
       <div
-        className="empty-state empty-state-no-repo"
+        className="empty-state-card-centered"
         data-testid={testId || 'empty-state-no-repo'}
       >
-        <FolderGit2 className="empty-state-icon" size={48} aria-hidden="true" />
+        <div className="empty-state-icon-circle">
+          <FolderGit2 className="empty-state-icon" size={32} aria-hidden="true" />
+        </div>
         <h3 className="empty-state-title">No Repository Opened</h3>
         <p className="empty-state-desc">
-          Open a Git repository to inspect working tree status.
+          Open an existing local Git repository to inspect working tree status, branches, and diffs safely.
         </p>
         {onAction && (
           <button
             type="button"
-            className="btn btn-primary btn-large"
+            className="btn-empty-cta"
             onClick={onAction}
             data-testid="empty-state-action-btn"
           >
-            {actionLabel || 'Open Repository'}
+            <Plus size={14} />
+            <span>{actionLabel || 'Open Repository'}</span>
           </button>
         )}
       </div>
@@ -51,7 +54,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className="sidebar-clean-state"
         data-testid={testId || 'sidebar-clean'}
       >
-        <CheckCircle2 className="clean-icon" size={36} aria-hidden="true" />
+        <div className="clean-icon-circle">
+          <CheckCircle2 className="clean-icon" size={28} aria-hidden="true" />
+        </div>
         <p className="clean-title">Working tree clean</p>
         <p className="clean-subtitle">
           No staged, unstaged, or untracked changes.
@@ -66,7 +71,9 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       className="diff-placeholder"
       data-testid={testId || 'diff-placeholder'}
     >
-      <FileText className="placeholder-icon" size={48} aria-hidden="true" />
+      <div className="placeholder-icon-circle">
+        <FileCode className="placeholder-icon" size={32} aria-hidden="true" />
+      </div>
       <h3>No File Selected</h3>
       <p>Select any staged file from the sidebar to inspect its staged diff.</p>
     </div>

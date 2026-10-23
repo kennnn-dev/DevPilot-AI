@@ -38,12 +38,13 @@ export const api: DevPilotAPI = {
   },
 
   /**
-   * Queries unified staged diff for a selected file.
+   * Queries unified staged or file diff for a selected file.
    */
   getStagedDiff: async (
     repoPath: string,
     filePath: string,
-    oldPath?: string
+    oldPath?: string,
+    scope?: 'staged' | 'unstaged' | 'untracked'
   ): Promise<IPCResult<GitDiffResult>> => {
     if (typeof repoPath !== 'string' || repoPath.trim().length === 0) {
       return {
@@ -63,9 +64,27 @@ export const api: DevPilotAPI = {
         error: 'Old file path must be a non-empty string when provided.',
       };
     }
-    return await ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STAGED_DIFF, { repoPath, filePath, oldPath });
+    const payload: {
+      repoPath: string;
+      filePath: string;
+      oldPath?: string;
+      scope?: 'staged' | 'unstaged' | 'untracked';
+    } = { repoPath, filePath, oldPath };
+    if (scope !== undefined) {
+      payload.scope = scope;
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STAGED_DIFF, payload);
   },
 };
+
+// Forward real-time repository changes from main process watcher (Method B)
+if (typeof ipcRenderer?.on === 'function') {
+  ipcRenderer.on('git:repo-changed', (_event, payload) => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('devpilot:repo-changed', { detail: payload }));
+    }
+  });
+}
 
 // Expose safe typed API on window.devPilot
 contextBridge.exposeInMainWorld('devPilot', api);
