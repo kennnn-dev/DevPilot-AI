@@ -1,8 +1,8 @@
-import type { GitStatusResult, GitDiffResult, IPCResult } from '../../shared/types';
+import type { GitStatusResult, GitDiffResult, GitAllStagedDiffResult, IPCResult } from '../../shared/types';
 import { validateGitRepository } from './repoValidator';
 import { detectBranch } from './branchDetector';
 import { parseStatusOutput } from './statusParser';
-import { getStagedDiff } from './diffService';
+import { getStagedDiff, getAllStagedDiff } from './diffService';
 import { executeGit } from './executor';
 
 export class GitService {
@@ -89,6 +89,42 @@ export class GitService {
         scope,
       });
 
+      return {
+        success: true,
+        data: diffResult,
+      };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      return {
+        success: false,
+        error: message,
+      };
+    }
+  }
+
+  /**
+   * Retrieves unified diff and status metrics for all staged files in the repository.
+   */
+  async getAllStagedDiff(repoPath: string): Promise<IPCResult<GitAllStagedDiffResult>> {
+    const validation = await validateGitRepository(repoPath);
+    if (!validation.isGitRepo) {
+      return {
+        success: false,
+        error: validation.error ?? 'Not a valid Git repository.',
+      };
+    }
+
+    if (validation.isBare) {
+      return {
+        success: false,
+        error: 'Repository is bare (no working tree).',
+      };
+    }
+
+    const workingRoot = validation.rootPath ?? repoPath;
+
+    try {
+      const diffResult = await getAllStagedDiff({ repoPath: workingRoot });
       return {
         success: true,
         data: diffResult,

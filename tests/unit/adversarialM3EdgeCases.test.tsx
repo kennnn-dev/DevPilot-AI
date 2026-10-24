@@ -586,6 +586,8 @@ describe('Adversarial Stress Test: Diff Rendering & Edge Cases (Milestone 3 Chal
         openDirectory: vi.fn(),
         getStatus: vi.fn(),
         getStagedDiff: vi.fn(),
+        getAllStagedDiff: vi.fn(),
+        generateCommitMessage: vi.fn(),
       };
 
       Object.defineProperty(window, 'devPilot', {

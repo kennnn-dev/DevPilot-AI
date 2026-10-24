@@ -40,6 +40,12 @@ describe('Milestone 4 Empirical Challenge: Real Git CLI & Robustness', () => {
       getStagedDiff: async (repoPath: string, filePath: string, oldPath?: string) => {
         return await gitService.getStagedDiff(repoPath, filePath, oldPath);
       },
+      getAllStagedDiff: async (repoPath: string) => {
+        return await gitService.getAllStagedDiff(repoPath);
+      },
+      generateCommitMessage: async (_options) => {
+        return { success: false, error: 'Not implemented in empiricalChallengeM4 bridge' };
+      },
     };
 
     Object.defineProperty(window, 'devPilot', {

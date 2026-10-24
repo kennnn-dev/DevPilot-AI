@@ -28,10 +28,28 @@ export const IPC_CHANNELS = {
    */
   GIT_GET_STAGED_DIFF: 'git:get-staged-diff',
 
+  /**
+   * Retrieves complete unified diff and status for all staged files in the repository.
+   * Main handler: queries git diff --staged -M and git status --porcelain=v1 -z -uall
+   * Payload: repoPath (string)
+   * Return: IPCResult<GitAllStagedDiffResult>
+   */
+  GIT_GET_ALL_STAGED_DIFF: 'git:get-all-staged-diff',
+
+  /**
+   * Dispatches staged changes to an n8n webhook endpoint to generate Conventional Commit.
+   * Main handler: handleWebhookGenerateCommit(options)
+   * Payload: WebhookGenerateCommitOptions
+   * Return: IPCResult<GeneratedCommitResult>
+   */
+  WEBHOOK_GENERATE_COMMIT: 'webhook:generate-commit',
+
   // Convenience aliases matching shorthand conventions
   OPEN_DIRECTORY: 'dialog:open-directory',
   GET_STATUS: 'git:get-status',
   GET_STAGED_DIFF: 'git:get-staged-diff',
+  GET_ALL_STAGED_DIFF: 'git:get-all-staged-diff',
+  GENERATE_COMMIT: 'webhook:generate-commit',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

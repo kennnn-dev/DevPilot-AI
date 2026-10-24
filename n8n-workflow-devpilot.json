@@ -1,0 +1,77 @@
+{
+  "name": "DevPilot AI - Conventional Commit Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "devpilot-commit",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "DevPilot Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ],
+      "webhookId": "devpilot-commit"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare the diff and prompt from DevPilot payload\nconst payload = $json.body || $json;\nconst diff = payload.diff || '';\nconst stagedFiles = payload.stagedFiles || [];\nconst summary = payload.diffSummary || {};\nconst customPrompt = payload.customPrompt || '';\n\nconst fileList = stagedFiles.map(f => `${f.changeType}: ${f.path}`).join('\\n');\n\nconst prompt = `Analyze the following staged Git changes and generate a commit message strictly adhering to Conventional Commits v1.0.0.\n\nAllowed types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert.\nFormat: <type>(<optional scope>): <description>\\n\\n[optional body]\\n\nStaged files:\\n${fileList}\\n\nDiff:\\n${diff.slice(0, 8000)}\\n\n${customPrompt ? 'Additional instructions: ' + customPrompt : ''}`;\n\nreturn {\n  json: {\n    prompt,\n    payload\n  }\n};"
+      },
+      "id": "prepare-prompt",
+      "name": "Prepare Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"commitMessage\": \"feat(generator): add AI commit message generator with n8n webhook integration\\n\\nImplements Phase 2 Conventional Commit generation from staged diffs with multi-repository support and in-place editing.\"\n}",
+        "options": {}
+      },
+      "id": "respond-webhook",
+      "name": "Respond to DevPilot",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "DevPilot Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Prompt": {
+      "main": [
+        [
+          {
+            "node": "Respond to DevPilot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1576,3 +1576,331 @@ html, body, #root {
   justify-content: space-between;
   font-size: 12px;
 }
+
+
+/* ==========================================================================
+   AI Commit Assistant - VS Code Dark Modern Theme
+   ========================================================================== */
+
+.btn-sparkles-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  margin-right: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-sparkles-trigger:hover,
+.btn-sparkles-trigger.active {
+  background: rgba(56, 189, 248, 0.25);
+  color: #7dd3fc;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
+}
+
+.commit-generator-panel {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 10px 0 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.generator-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f3f4f6;
+  letter-spacing: 0.2px;
+}
+
+.panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-panel-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  color: #9ca3af;
+  background: #1f2937;
+  transition: all 0.15s ease;
+}
+
+.btn-panel-action:hover,
+.btn-panel-action.active {
+  color: #f9fafb;
+  background: #374151;
+}
+
+.generator-settings-drawer {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.settings-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: #f8fafc;
+}
+
+.settings-input:focus {
+  border-color: #38bdf8;
+}
+
+.btn-save-settings {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 5px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.btn-save-settings:hover {
+  background: #1d4ed8;
+}
+
+.settings-error-text {
+  font-size: 11px;
+  color: #f87171;
+}
+
+.settings-success-text {
+  font-size: 11px;
+  color: #34d399;
+}
+
+.generator-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 4px 0;
+}
+
+.generator-prompt-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.generator-prompt-input {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 12px;
+  color: #f3f4f6;
+}
+
+.generator-prompt-input:focus {
+  border-color: #38bdf8;
+}
+
+.btn-generate-commit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  transition: all 0.2s ease;
+}
+
+.btn-generate-commit:hover:not(:disabled) {
+  opacity: 0.95;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.5);
+}
+
+.btn-generate-commit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #374151;
+  box-shadow: none;
+}
+
+.generator-error-banner {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.error-message-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.error-text {
+  font-size: 12px;
+  color: #fca5a5;
+}
+
+.btn-retry-generate {
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.commit-editor-area {
+  background: #0b1120;
+  border: 1px solid #1e293b;
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commit-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.commit-type-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.commit-scope-badge {
+  font-size: 11px;
+  color: #94a3b8;
+  font-family: var(--font-mono, monospace);
+}
+
+.commit-breaking-badge {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.commit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.commit-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.commit-subject-input {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #f8fafc;
+  font-family: var(--font-mono, monospace);
+}
+
+.commit-body-textarea {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: #f8fafc;
+  font-family: var(--font-mono, monospace);
+  resize: vertical;
+}
+
+.commit-action-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.btn-copy-commit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #10b981;
+  color: #ffffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-copy-commit:hover:not(:disabled) {
+  background: #059669;
+}
+
+.btn-copy-commit.copied {
+  background: #047857;
+}

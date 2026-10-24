@@ -11,10 +11,12 @@ import {
   Terminal,
   MoreHorizontal,
   Folder,
+  Sparkles,
 } from 'lucide-react';
 import type { GitFileStatus } from '../../shared/types';
 import FileList from './FileList';
 import EmptyState from './EmptyState';
+import CommitGeneratorPanel from './CommitGenerator/CommitGeneratorPanel';
 
 export interface SidebarProps {
   /** Currently opened repository path */
@@ -53,9 +55,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const handleOpen = onOpenDirectory || onOpenFolder;
   const totalChanges = staged.length + unstaged.length + untracked.length;
   const [isRepoCardExpanded, setIsRepoCardExpanded] = useState(true);
+  const [isCommitAssistantOpen, setIsCommitAssistantOpen] = useState(false);
 
   const repoName = repoPath
-    ? repoPath.split(/[/\\]/).filter(Boolean).pop() || repoPath
+    ? repoPath.split(/[\/\\]/).filter(Boolean).pop() || repoPath
     : null;
 
   return (
@@ -148,6 +151,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )}
             </div>
 
+            {/* AI Commit Assistant Panel (Triggered via Sparkles button) */}
+            {isCommitAssistantOpen && (
+              <CommitGeneratorPanel
+                repoPath={repoPath}
+                stagedCount={staged.length}
+                isOpen={isCommitAssistantOpen}
+                onClose={() => setIsCommitAssistantOpen(false)}
+              />
+            )}
+
             {/* Files List Header matching Image: [x] Files (6) */}
             <div className="files-section-bar">
               <input
@@ -173,6 +186,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 defaultExpanded={true}
                 emptyText="No staged changes"
                 onSelectFile={(f) => onSelectFile(f)}
+                headerAction={
+                  <button
+                    type="button"
+                    className={`btn-sparkles-trigger ${isCommitAssistantOpen ? 'active' : ''}`}
+                    title="AI Commit Assistant"
+                    data-testid="sparkles-btn"
+                    onClick={() => setIsCommitAssistantOpen((prev) => !prev)}
+                  >
+                    <Sparkles size={13} />
+                  </button>
+                }
               />
 
               {/* Unstaged Changes Section */}
@@ -206,6 +230,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="repo-actions-panel">
               <span className="repo-actions-title">Repository Actions</span>
               <div className="repo-actions-row">
+                <button
+                  type="button"
+                  className="btn-repo-action"
+                  title="Generate Conventional Commit Message with AI"
+                  data-testid="repo-action-generate-commit"
+                  onClick={() => setIsCommitAssistantOpen(true)}
+                >
+                  <Sparkles size={13} className="text-cyan" />
+                  <span>Generate Commit</span>
+                </button>
                 <button
                   type="button"
                   className="btn-repo-action"

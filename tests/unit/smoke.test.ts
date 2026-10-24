@@ -13,6 +13,8 @@ describe('DevPilot Smoke & Contract Integrity Tests', () => {
     expect(IPC_CHANNELS.DIALOG_OPEN_DIRECTORY).toBe('dialog:open-directory');
     expect(IPC_CHANNELS.GIT_GET_STATUS).toBe('git:get-status');
     expect(IPC_CHANNELS.GIT_GET_STAGED_DIFF).toBe('git:get-staged-diff');
+    expect(IPC_CHANNELS.GIT_GET_ALL_STAGED_DIFF).toBe('git:get-all-staged-diff');
+    expect(IPC_CHANNELS.WEBHOOK_GENERATE_COMMIT).toBe('webhook:generate-commit');
 
     // Verify aliases
     expect(IPC_CHANNELS.OPEN_DIRECTORY).toBe('dialog:open-directory');
@@ -88,9 +90,34 @@ describe('DevPilot Smoke & Contract Integrity Tests', () => {
       openDirectory: async () => '/test',
       getStatus: async () => ({ success: true, data: { repoPath: '/test', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] } }),
       getStagedDiff: async () => ({ success: true, data: { repoPath: '/test', filePath: 'a.ts', rawDiff: '', isBinary: false, isEmpty: true, hunks: [] } }),
+      getAllStagedDiff: async () => ({
+        success: true,
+        data: {
+          repoPath: '/test',
+          rawDiff: '',
+          stagedFiles: [],
+          summary: { filesChanged: 0, insertions: 0, deletions: 0 },
+          isEmpty: true,
+        },
+      }),
+      generateCommitMessage: async () => ({
+        success: true,
+        data: {
+          commitMessage: 'feat: init',
+          parsed: {
+            raw: 'feat: init',
+            type: 'feat',
+            subject: 'init',
+            isBreaking: false,
+            isValid: true,
+          },
+        },
+      }),
     };
     expect(typeof mockApi.openDirectory).toBe('function');
     expect(typeof mockApi.getStatus).toBe('function');
     expect(typeof mockApi.getStagedDiff).toBe('function');
+    expect(typeof mockApi.getAllStagedDiff).toBe('function');
+    expect(typeof mockApi.generateCommitMessage).toBe('function');
   });
 });

@@ -1,24 +1,24 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { IPC_CHANNELS } from '../shared/ipcChannels';
-import type { DevPilotAPI, GitStatusResult, GitDiffResult, IPCResult } from '../shared/types';
+import type {
+  DevPilotAPI,
+  GitStatusResult,
+  GitDiffResult,
+  GitAllStagedDiffResult,
+  WebhookGenerateCommitOptions,
+  GeneratedCommitResult,
+  IPCResult,
+} from '../shared/types';
 
 /**
  * DevPilot Safe Preload Bridge
  *
  * Implements DevPilotAPI exposing strictly read-only, whitelisted
  * IPC invocations to the renderer process via Electron's contextBridge.
- *
- * Security Guarantees:
- * 1. contextIsolation is enforced.
- * 2. nodeIntegration is disabled.
- * 3. ipcRenderer is NEVER leaked to window global.
- * 4. Only whitelisted channels are invoked.
- * 5. Input parameters are validated before crossing the IPC boundary.
  */
 export const api: DevPilotAPI = {
   /**
    * Opens OS native directory picker dialog.
-   * Returns selected absolute path string or null if canceled.
    */
   openDirectory: async (): Promise<string | null> => {
     return await ipcRenderer.invoke(IPC_CHANNELS.DIALOG_OPEN_DIRECTORY);
@@ -75,9 +75,37 @@ export const api: DevPilotAPI = {
     }
     return await ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_STAGED_DIFF, payload);
   },
+
+  /**
+   * Retrieves complete unified diff and status for all staged files in the repository.
+   */
+  getAllStagedDiff: async (repoPath: string): Promise<IPCResult<GitAllStagedDiffResult>> => {
+    if (typeof repoPath !== 'string' || repoPath.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Repository path must be a non-empty string.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.GIT_GET_ALL_STAGED_DIFF, repoPath);
+  },
+
+  /**
+   * Dispatches staged changes to an n8n webhook endpoint to generate a Conventional Commit message.
+   */
+  generateCommitMessage: async (
+    options: WebhookGenerateCommitOptions
+  ): Promise<IPCResult<GeneratedCommitResult>> => {
+    if (!options || typeof options !== 'object') {
+      return {
+        success: false,
+        error: 'Options must be an object.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.WEBHOOK_GENERATE_COMMIT, options);
+  },
 };
 
-// Forward real-time repository changes from main process watcher (Method B)
+// Forward real-time repository changes from main process watcher
 if (typeof ipcRenderer?.on === 'function') {
   ipcRenderer.on('git:repo-changed', (_event, payload) => {
     if (typeof window !== 'undefined') {

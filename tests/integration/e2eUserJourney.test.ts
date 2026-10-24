@@ -44,6 +44,12 @@ describe('Feature F22: End-to-End Real Git User Journey Integration Tests', () =
       getStagedDiff: async (repoPath: string, filePath: string, oldPath?: string) => {
         return await gitService.getStagedDiff(repoPath, filePath, oldPath);
       },
+      getAllStagedDiff: async (repoPath: string) => {
+        return await gitService.getAllStagedDiff(repoPath);
+      },
+      generateCommitMessage: async (_options) => {
+        return { success: false, error: 'Not implemented in e2eUserJourney bridge' };
+      },
     };
 
     Object.defineProperty(window, 'devPilot', {
@@ -304,11 +310,14 @@ describe('Feature F22: End-to-End Real Git User Journey Integration Tests', () =
       testRepo.createBinaryFile('assets/badge.png', 64);
       testRepo.stage('assets/badge.png');
 
+      await waitFor(() => {
+        expect(screen.getByTestId('refresh-btn').hasAttribute('disabled')).toBe(false);
+      });
       fireEvent.click(screen.getByTestId('refresh-btn'));
 
       await waitFor(() => {
         expect(screen.getByTestId('file-item-assets/badge.png')).toBeDefined();
-      });
+      }, { timeout: 4000 });
 
       fireEvent.click(screen.getByTestId('file-item-assets/badge.png'));
 

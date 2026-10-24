@@ -4,7 +4,12 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { registerDialogHandlers } from './ipc/dialogHandlers';
 import { registerGitHandlers } from './ipc/gitHandlers';
+import { registerWebhookHandlers } from './ipc/webhookHandlers';
 import { stopWatchingRepo } from './git/repoWatcher';
+import { loadEnvFiles } from './utils/envLoader';
+
+// Automatically load environment variables from .env or ~/.devpilot.env
+loadEnvFiles();
 
 // Resolve current directory reliably in both CJS and ESM environments
 const currentDir = typeof __dirname !== 'undefined'
@@ -187,6 +192,7 @@ export function configureSessionSecurity(sess: Electron.Session): void {
 export function registerIpcHandlers(): void {
   registerDialogHandlers(() => mainWindow);
   registerGitHandlers();
+  registerWebhookHandlers();
 }
 
 /**

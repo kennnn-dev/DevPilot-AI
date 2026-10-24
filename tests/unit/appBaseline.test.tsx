@@ -50,6 +50,8 @@ describe('DevPilot AI App End-to-End Interactive Flows', () => {
       openDirectory: vi.fn(),
       getStatus: vi.fn(),
       getStagedDiff: vi.fn(),
+      getAllStagedDiff: vi.fn(),
+      generateCommitMessage: vi.fn(),
     };
 
     Object.defineProperty(window, 'devPilot', {

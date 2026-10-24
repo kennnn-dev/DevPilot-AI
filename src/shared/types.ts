@@ -133,6 +133,90 @@ export interface GetStagedDiffParams {
 }
 
 /**
+ * Repository context information sent to the webhook.
+ */
+export interface WebhookRepositoryContext {
+  repoPath: string;
+  branch: string;
+  isDetached: boolean;
+}
+
+/**
+ * Representation of a staged file sent to the webhook.
+ */
+export interface WebhookStagedFile {
+  path: string;
+  oldPath?: string;
+  changeType: GitFileChangeType;
+  statusCode: string;
+}
+
+/**
+ * Summary metrics of staged changes.
+ */
+export interface WebhookDiffSummary {
+  filesChanged: number;
+  insertions: number;
+  deletions: number;
+}
+
+/**
+ * Complete structured payload dispatched to the n8n webhook.
+ */
+export interface WebhookCommitPayload {
+  repository: WebhookRepositoryContext;
+  branch?: string;
+  stagedFiles: WebhookStagedFile[];
+  diffSummary: WebhookDiffSummary;
+  diff: string;
+  stagedDiff?: string;
+  customPrompt?: string;
+}
+
+/**
+ * Combined diff and status result for all staged changes in a repository.
+ */
+export interface GitAllStagedDiffResult {
+  repoPath: string;
+  rawDiff: string;
+  stagedFiles: GitFileStatus[];
+  summary: WebhookDiffSummary;
+  isEmpty: boolean;
+}
+
+/**
+ * Options provided when requesting commit message generation.
+ */
+export interface WebhookGenerateCommitOptions {
+  repoPath: string;
+  webhookUrl: string;
+  webhookToken?: string;
+  customPrompt?: string;
+}
+
+/**
+ * Structured Conventional Commit parsed conforming to specification v1.0.0.
+ */
+export interface ParsedConventionalCommit {
+  raw: string;
+  type: string;
+  scope?: string;
+  isBreaking: boolean;
+  subject: string;
+  body?: string;
+  isValid: boolean;
+}
+
+/**
+ * Final result returned from commit message generation.
+ */
+export interface GeneratedCommitResult {
+  commitMessage: string;
+  parsed: ParsedConventionalCommit;
+  rawResponse?: unknown;
+}
+
+/**
  * Safe, read-only API exposed to the Renderer window via Preload contextBridge.
  */
 export interface DevPilotAPI {
@@ -161,6 +245,18 @@ export interface DevPilotAPI {
     oldPath?: string,
     scope?: 'staged' | 'unstaged' | 'untracked'
   ) => Promise<IPCResult<GitDiffResult>>;
+
+  /**
+   * Retrieves complete unified diff and status for all staged files in the repository.
+   * @param repoPath Absolute path to repository
+   */
+  getAllStagedDiff: (repoPath: string) => Promise<IPCResult<GitAllStagedDiffResult>>;
+
+  /**
+   * Dispatches staged changes to an n8n webhook endpoint to generate a Conventional Commit message.
+   * @param options Target repository and webhook endpoint configuration
+   */
+  generateCommitMessage: (options: WebhookGenerateCommitOptions) => Promise<IPCResult<GeneratedCommitResult>>;
 }
 
 /**
@@ -171,3 +267,4 @@ declare global {
     devPilot: DevPilotAPI;
   }
 }
+

@@ -1,7 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron';
 import path from 'node:path';
 import { IPC_CHANNELS } from '../../shared/ipcChannels';
-import type { GitStatusResult, GitDiffResult, IPCResult } from '../../shared/types';
+import type { GitStatusResult, GitDiffResult, GitAllStagedDiffResult, IPCResult } from '../../shared/types';
 import { gitService } from '../git/gitService';
 import { startWatchingRepo } from '../git/repoWatcher';
 
@@ -119,6 +119,7 @@ export function registerGitHandlers(): void {
   if (typeof ipcMain.removeHandler === 'function') {
     ipcMain.removeHandler(IPC_CHANNELS.GIT_GET_STATUS);
     ipcMain.removeHandler(IPC_CHANNELS.GIT_GET_STAGED_DIFF);
+    ipcMain.removeHandler(IPC_CHANNELS.GIT_GET_ALL_STAGED_DIFF);
   }
 
   // 1. git:get-status
@@ -184,6 +185,21 @@ export function registerGitHandlers(): void {
           error: message,
         };
       }
+    }
+  );
+
+  // 3. git:get-all-staged-diff
+  ipcMain.handle(
+    IPC_CHANNELS.GIT_GET_ALL_STAGED_DIFF,
+    async (_event, payload: unknown): Promise<IPCResult<GitAllStagedDiffResult>> => {
+      const rawPath = typeof payload === 'object' && payload !== null && 'repoPath' in payload
+        ? (payload as { repoPath: unknown }).repoPath
+        : payload;
+      const validation = validateRepoPathInput(rawPath);
+      if (!validation.isValid) {
+        return { success: false, error: validation.error };
+      }
+      return await gitService.getAllStagedDiff(validation.resolvedPath!);
     }
   );
 }

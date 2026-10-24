@@ -21,6 +21,8 @@ export interface FileListProps {
   emptyText?: string;
   /** Selection callback */
   onSelectFile?: (file: GitFileStatus) => void;
+  /** Optional custom header action button or element (e.g. Sparkles commit generator trigger) */
+  headerAction?: React.ReactNode;
 }
 
 export function getStatusBadgeLabel(file: GitFileStatus): string {
@@ -77,6 +79,7 @@ export const FileList: React.FC<FileListProps> = ({
   defaultExpanded = true,
   emptyText,
   onSelectFile,
+  headerAction,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(defaultExpanded);
 
@@ -108,7 +111,10 @@ export const FileList: React.FC<FileListProps> = ({
           )}
           <span className="section-title">{title}</span>
         </div>
-        <span className="section-count">{count}</span>
+        <div className="section-header-right" onClick={(e) => e.stopPropagation()}>
+          {headerAction}
+          <span className="section-count">{count}</span>
+        </div>
       </div>
 
       {isExpanded && (

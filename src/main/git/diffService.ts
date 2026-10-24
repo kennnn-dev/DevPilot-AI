@@ -7,7 +7,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { executeGit, type GitExecutionResult } from './executor';
 import { parseDiffOutput } from './diffParser';
-import type { GitDiffResult } from '../../shared/types';
+import { parseStatusOutput } from './statusParser';
+import type { GitDiffResult, GitAllStagedDiffResult } from '../../shared/types';
 
 export interface GetStagedDiffOptions {
   repoPath: string;
@@ -123,4 +124,45 @@ export async function getStagedDiffForFile(
   scope?: 'staged' | 'unstaged' | 'untracked'
 ): Promise<GitDiffResult> {
   return getStagedDiff({ repoPath, filePath, oldPath, scope });
+}
+
+export interface GetAllStagedDiffOptions {
+  repoPath: string;
+}
+
+export async function getAllStagedDiff(options: GetAllStagedDiffOptions): Promise<GitAllStagedDiffResult> {
+  if (!options || typeof options.repoPath !== 'string' || options.repoPath.trim().length === 0) {
+    throw new Error('Repository path must be a non-empty string.');
+  }
+
+  const cleanRepo = options.repoPath.trim();
+  const diffResult = await executeGit(['diff', '--staged', '-M'], { cwd: cleanRepo });
+  const rawDiff = diffResult.stdout;
+
+  const statusResult = await executeGit(['status', '--porcelain=v1', '-z', '-uall'], { cwd: cleanRepo });
+  const parsedStatus = parseStatusOutput(statusResult.stdout);
+
+  const BINARY_DIFF_REGEX = /Binary files .* differ/;
+  const GIT_BINARY_PATCH_REGEX = /^GIT binary patch/m;
+  const isBinary = BINARY_DIFF_REGEX.test(rawDiff) || GIT_BINARY_PATCH_REGEX.test(rawDiff);
+  const isEmpty = parsedStatus.staged.length === 0 || (rawDiff.trim().length === 0 && !isBinary);
+
+  let insertions = 0;
+  let deletions = 0;
+  for (const line of rawDiff.split('\n')) {
+    if (line.startsWith('+') && !line.startsWith('+++')) insertions++;
+    if (line.startsWith('-') && !line.startsWith('---')) deletions++;
+  }
+
+  return {
+    repoPath: cleanRepo,
+    rawDiff,
+    stagedFiles: parsedStatus.staged,
+    summary: {
+      filesChanged: parsedStatus.staged.length,
+      insertions,
+      deletions,
+    },
+    isEmpty,
+  };
 }
