@@ -1,6 +1,6 @@
 {
   "name": "devpilot",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Safe, read-only real-time Git desktop inspector",
   "author": {
     "name": "DevPilot AI Team",
