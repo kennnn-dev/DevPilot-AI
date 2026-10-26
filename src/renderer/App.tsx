@@ -7,6 +7,7 @@ import RepositoryCards from './components/RepositoryCards';
 import Sidebar from './components/Sidebar';
 import DiffViewer from './components/DiffViewer';
 import ErrorBanner from './components/ErrorBanner';
+import SettingsModal from './components/SettingsModal/SettingsModal';
 
 /**
  * DevPilot AI Main Studio Component.
@@ -50,6 +51,9 @@ export const App: React.FC = () => {
     removeRepoFromWorkspace,
     setActiveRepoPath,
   } = useWorkspaces();
+
+  // Centralized settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState<boolean>(false);
 
   // User-resizable width for the diff panel (persisted locally)
   const [diffWidth, setDiffWidth] = React.useState<number>(() => {
@@ -223,6 +227,8 @@ export const App: React.FC = () => {
           onCreateWorkspace={handleCreateWorkspace}
           onRenameWorkspace={renameWorkspace}
           onDeleteWorkspace={handleDeleteWorkspace}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          isSettingsActive={isSettingsOpen}
         />
 
         {/* Column 2: Center Workspace & Files Area (Expands full-width when no file is selected) */}
@@ -273,6 +279,7 @@ export const App: React.FC = () => {
             loading={loading}
             onSelectFile={handleSelectFile}
             onOpenFolder={handleOpenDirectory}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
         </main>
 
@@ -322,6 +329,12 @@ export const App: React.FC = () => {
           </span>
         </div>
       </footer>
+
+      {/* Centralized Settings Modal Overlay */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 };

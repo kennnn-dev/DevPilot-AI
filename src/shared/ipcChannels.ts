@@ -44,12 +44,22 @@ export const IPC_CHANNELS = {
    */
   WEBHOOK_GENERATE_COMMIT: 'webhook:generate-commit',
 
+  /**
+   * Queries environment-configured webhook defaults (DEVPILOT_WEBHOOK_URL, DEVPILOT_WEBHOOK_TOKEN).
+   * Main handler: handleGetWebhookConfig()
+   * Payload: none
+   * Return: IPCResult<ResolvedWebhookConfig>
+   */
+  SETTINGS_GET_WEBHOOK_CONFIG: 'settings:get-webhook-config',
+  GET_WEBHOOK_CONFIG: 'settings:get-webhook-config',
+
   // Convenience aliases matching shorthand conventions
   OPEN_DIRECTORY: 'dialog:open-directory',
   GET_STATUS: 'git:get-status',
   GET_STAGED_DIFF: 'git:get-staged-diff',
   GET_ALL_STAGED_DIFF: 'git:get-all-staged-diff',
   GENERATE_COMMIT: 'webhook:generate-commit',
+  GET_CONFIG: 'settings:get-webhook-config',
 } as const;
 
 export type IPCChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS];

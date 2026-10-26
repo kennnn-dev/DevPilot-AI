@@ -39,6 +39,8 @@ export interface SidebarProps {
   onOpenFolder?: () => void;
   /** Alias for onOpenFolder */
   onOpenDirectory?: () => void;
+  /** Handler to open settings modal */
+  onOpenSettings?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -51,6 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectFile,
   onOpenFolder,
   onOpenDirectory,
+  onOpenSettings,
 }) => {
   const handleOpen = onOpenDirectory || onOpenFolder;
   const totalChanges = staged.length + unstaged.length + untracked.length;
@@ -158,6 +161,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 stagedCount={staged.length}
                 isOpen={isCommitAssistantOpen}
                 onClose={() => setIsCommitAssistantOpen(false)}
+                onOpenSettings={onOpenSettings}
               />
             )}
 

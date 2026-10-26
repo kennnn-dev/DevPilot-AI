@@ -20,6 +20,10 @@ export interface NavigationSidebarProps {
   onCreateWorkspace: (name: string) => Workspace;
   onRenameWorkspace: (id: string, newName: string) => void;
   onDeleteWorkspace: (id: string) => void;
+  /** Callback invoked when Settings action is triggered */
+  onOpenSettings?: () => void;
+  /** Whether the settings modal is currently active */
+  isSettingsActive?: boolean;
 }
 
 export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
@@ -29,6 +33,8 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onCreateWorkspace,
   onRenameWorkspace,
   onDeleteWorkspace,
+  onOpenSettings,
+  isSettingsActive = false,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newWsName, setNewWsName] = useState('');
@@ -87,15 +93,30 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       </div>
 
       {/* Main Navigation Menu */}
-      <nav className="nav-menu">
-        <div className="nav-item nav-item-active" title="Workspaces">
+      <nav className="nav-menu" aria-label="Main Navigation">
+        <div
+          className={`nav-item ${!isSettingsActive ? 'nav-item-active' : ''}`}
+          title="Workspaces"
+        >
           <Layers size={16} className="nav-item-icon" />
           <span>Workspaces</span>
         </div>
-        <div className="nav-item" title="Settings">
+        <button
+          type="button"
+          className={`nav-item ${isSettingsActive ? 'nav-item-active' : ''}`}
+          title="Settings"
+          data-testid="nav-settings-btn"
+          onClick={onOpenSettings}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onOpenSettings?.();
+            }
+          }}
+        >
           <Settings size={16} className="nav-item-icon" />
           <span>Settings</span>
-        </div>
+        </button>
         <div className="nav-item" title="About DevPilot AI">
           <Info size={16} className="nav-item-icon" />
           <span>About</span>

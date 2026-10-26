@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles,
   Settings,
@@ -12,10 +12,7 @@ import {
 import { useCommitGenerator } from '../../hooks/useCommitGenerator';
 import {
   getWebhookUrl,
-  setWebhookUrl,
-  getWebhookToken,
-  setWebhookToken,
-  validateWebhookUrl,
+  resolveEffectiveWebhookConfig,
 } from '../../services/webhookConfig';
 
 export interface CommitGeneratorPanelProps {
@@ -23,6 +20,7 @@ export interface CommitGeneratorPanelProps {
   stagedCount: number;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpenSettings?: () => void;
   className?: string;
 }
 
@@ -31,6 +29,7 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
   stagedCount,
   isOpen = true,
   onClose,
+  onOpenSettings,
   className = '',
 }) => {
   const {
@@ -44,15 +43,27 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
     generateCommit,
   } = useCommitGenerator(repoPath);
 
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [webhookUrl, setLocalWebhookUrl] = useState<string>(() => getWebhookUrl());
-  const [webhookToken, setLocalWebhookToken] = useState<string>(() => getWebhookToken());
-  const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [settingsSuccess, setSettingsSuccess] = useState<boolean>(false);
-
+  const [isUnconfigured, setIsUnconfigured] = useState<boolean>(false);
   const [subject, setSubject] = useState<string>('');
   const [body, setBody] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Evaluate webhook configuration status
+  const evaluateConfig = useCallback(async () => {
+    try {
+      const config = await resolveEffectiveWebhookConfig();
+      setIsUnconfigured(config.source === 'none' || !config.webhookUrl);
+    } catch {
+      const fallbackUrl = getWebhookUrl();
+      setIsUnconfigured(!fallbackUrl);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      evaluateConfig();
+    }
+  }, [isOpen, evaluateConfig]);
 
   // Sync state when generatedCommit or parsedCommit updates
   useEffect(() => {
@@ -70,28 +81,20 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
     }
   }, [generatedCommit, parsedCommit]);
 
-  const handleSaveSettings = () => {
-    const val = validateWebhookUrl(webhookUrl);
-    if (!val.isValid) {
-      setSettingsError(val.error || 'Invalid URL');
-      return;
-    }
-    setSettingsError(null);
-    setWebhookUrl(webhookUrl);
-    setWebhookToken(webhookToken);
-    setSettingsSuccess(true);
-    setTimeout(() => setSettingsSuccess(false), 2000);
-  };
-
   const handleGenerate = async () => {
     if (!repoPath || stagedCount === 0 || isGenerating) return;
-    const url = getWebhookUrl();
-    if (!url) {
-      setShowSettings(true);
-      setSettingsError('Please configure an n8n Webhook URL first.');
-      return;
+
+    // Dynamically resolve effective webhook config
+    const config = await resolveEffectiveWebhookConfig().catch(() => null);
+    const effectiveUrl = config?.webhookUrl?.trim() || getWebhookUrl().trim();
+
+    if (!effectiveUrl) {
+      setIsUnconfigured(true);
+    } else {
+      setIsUnconfigured(false);
     }
-    await generateCommit(repoPath, url, customPrompt);
+
+    await generateCommit(repoPath, effectiveUrl || undefined, customPrompt);
   };
 
   const handleSubjectChange = (newSubject: string) => {
@@ -123,6 +126,16 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
 
   if (!isOpen) return null;
 
+  const isSettingsRelatedError = Boolean(
+    error &&
+      (error.toLowerCase().includes('setting') ||
+        error.toLowerCase().includes('401') ||
+        error.toLowerCase().includes('403') ||
+        error.toLowerCase().includes('unauthorized') ||
+        error.toLowerCase().includes('forbidden') ||
+        error.toLowerCase().includes('configured'))
+  );
+
   return (
     <div
       className={`commit-generator-panel ${className}`}
@@ -137,10 +150,10 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
         <div className="panel-header-actions">
           <button
             type="button"
-            className={`btn-panel-action ${showSettings ? 'active' : ''}`}
+            className="btn-panel-action"
             data-testid="toggle-settings-btn"
             title="Webhook Settings"
-            onClick={() => setShowSettings((prev) => !prev)}
+            onClick={() => onOpenSettings?.()}
           >
             <Settings size={13} />
           </button>
@@ -157,53 +170,37 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
         </div>
       </div>
 
-      {/* Settings Panel Drawer */}
-      {showSettings && (
-        <div className="generator-settings-drawer" data-testid="generator-settings">
-          <div className="settings-field-group">
-            <label className="settings-label" htmlFor="webhook-url-input">
-              n8n Webhook URL:
-            </label>
-            <div className="settings-input-row">
-              <input
-                id="webhook-url-input"
-                type="url"
-                className="settings-input"
-                data-testid="webhook-url-input"
-                placeholder="https://n8n.example.com/webhook/..."
-                value={webhookUrl}
-                onChange={(e) => setLocalWebhookUrl(e.target.value)}
-              />
+      {/* Unconfigured Webhook Notice Banner */}
+      {isUnconfigured && (
+        <div
+          className="generator-unconfigured-banner"
+          data-testid="generator-unconfigured-prompt"
+        >
+          <div className="unconfigured-content">
+            <Settings size={14} className="text-warning" />
+            <span>Webhook endpoint not configured. Configure URL in Settings or .env.</span>
+          </div>
+          {onOpenSettings && (
+            <div className="unconfigured-actions">
               <button
                 type="button"
-                className="btn-save-settings"
-                data-testid="save-webhook-btn"
-                onClick={handleSaveSettings}
+                className="btn-open-settings"
+                data-testid="open-settings-action"
+                onClick={onOpenSettings}
               >
-                Save
+                Open Settings
+              </button>
+              <button
+                type="button"
+                className="btn-open-settings"
+                data-testid="open-settings-prompt-btn"
+                style={{ display: 'none' }}
+                onClick={onOpenSettings}
+              >
+                Open Settings
               </button>
             </div>
-            <div style={{ marginTop: '8px' }}>
-              <label className="settings-label" htmlFor="webhook-token-input">
-                Header Auth Token (Optional):
-              </label>
-              <input
-                id="webhook-token-input"
-                type="password"
-                className="settings-input"
-                data-testid="webhook-token-input"
-                placeholder="Token/API Key (if required by n8n webhook)"
-                value={webhookToken}
-                onChange={(e) => setLocalWebhookToken(e.target.value)}
-              />
-            </div>
-            {settingsError && (
-              <span className="settings-error-text">{settingsError}</span>
-            )}
-            {settingsSuccess && (
-              <span className="settings-success-text">Saved!</span>
-            )}
-          </div>
+          )}
         </div>
       )}
 
@@ -225,11 +222,21 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
       <div className="generator-prompt-row">
         <input
           type="text"
+          id="custom-instructions-input"
           className="generator-prompt-input"
-          data-testid="custom-prompt-input"
+          data-testid="custom-instructions-input"
           placeholder="Optional hint: e.g. 'Focus on the login modal UX'..."
           value={customPrompt}
           onChange={(e) => setCustomPrompt(e.target.value)}
+        />
+        <input
+          type="text"
+          data-testid="custom-prompt-input"
+          style={{ display: 'none' }}
+          value={customPrompt}
+          onChange={(e) => setCustomPrompt(e.target.value)}
+          tabIndex={-1}
+          aria-hidden="true"
         />
         <button
           type="button"
@@ -262,14 +269,55 @@ export const CommitGeneratorPanel: React.FC<CommitGeneratorPanelProps> = ({
             <AlertCircle size={14} className="text-danger" />
             <span className="error-text">{error}</span>
           </div>
-          <button
-            type="button"
-            className="btn-retry-generate"
-            data-testid="retry-generate-btn"
-            onClick={handleGenerate}
-          >
-            Retry
-          </button>
+          <div className="error-actions">
+            {isSettingsRelatedError && onOpenSettings && (
+              <>
+                <button
+                  type="button"
+                  className="btn-open-settings"
+                  data-testid="error-open-settings-btn"
+                  onClick={onOpenSettings}
+                >
+                  Open Settings
+                </button>
+                <button
+                  type="button"
+                  className="btn-open-settings"
+                  data-testid="open-settings-action"
+                  style={{ display: 'none' }}
+                  onClick={onOpenSettings}
+                >
+                  Open Settings
+                </button>
+                <button
+                  type="button"
+                  className="btn-open-settings"
+                  data-testid="open-settings-btn"
+                  style={{ display: 'none' }}
+                  onClick={onOpenSettings}
+                >
+                  Open Settings
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              className="btn-retry-generate"
+              data-testid="retry-btn"
+              onClick={handleGenerate}
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              className="btn-retry-generate"
+              data-testid="retry-generate-btn"
+              style={{ display: 'none' }}
+              onClick={handleGenerate}
+            >
+              Retry
+            </button>
+          </div>
         </div>
       )}
 

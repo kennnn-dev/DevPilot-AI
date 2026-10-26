@@ -6,6 +6,9 @@ import {
   validateWebhookOptions,
   handleWebhookGenerateCommit,
   registerWebhookHandlers,
+  getEnvWebhookUrl,
+  getEnvWebhookToken,
+  handleGetWebhookConfig,
 } from '../../src/main/ipc/webhookHandlers';
 import { gitService } from '../../src/main/git/gitService';
 import { ipcMain } from 'electron';
@@ -128,6 +131,33 @@ describe('Webhook IPC Handlers (src/main/ipc/webhookHandlers.ts)', () => {
     it('validates repoPath non-empty string', () => {
       expect(validateWebhookOptions({ webhookUrl: 'https://example.com', repoPath: '' }).isValid).toBe(false);
       expect(validateWebhookOptions({ webhookUrl: 'https://example.com', repoPath: '  ' }).isValid).toBe(false);
+    });
+
+    it('validates successfully when webhookUrl is omitted but DEVPILOT_WEBHOOK_URL is set in env', () => {
+      const orig = process.env.DEVPILOT_WEBHOOK_URL;
+      process.env.DEVPILOT_WEBHOOK_URL = 'https://env-endpoint.example.com/webhook';
+      const res = validateWebhookOptions({ repoPath: '/path' });
+      expect(res.isValid).toBe(true);
+      expect(res.resolvedUrl).toBe('https://env-endpoint.example.com/webhook');
+      if (orig) process.env.DEVPILOT_WEBHOOK_URL = orig;
+      else delete process.env.DEVPILOT_WEBHOOK_URL;
+    });
+
+    it('returns actionable error when neither options nor .env URL are set', () => {
+      const orig1 = process.env.DEVPILOT_WEBHOOK_URL;
+      const orig2 = process.env.N8N_WEBHOOK_URL;
+      const orig3 = process.env.WEBHOOK_URL;
+      delete process.env.DEVPILOT_WEBHOOK_URL;
+      delete process.env.N8N_WEBHOOK_URL;
+      delete process.env.WEBHOOK_URL;
+
+      const res = validateWebhookOptions({ repoPath: '/path' });
+      expect(res.isValid).toBe(false);
+      expect(res.error).toContain('Webhook URL is not configured');
+
+      if (orig1) process.env.DEVPILOT_WEBHOOK_URL = orig1;
+      if (orig2) process.env.N8N_WEBHOOK_URL = orig2;
+      if (orig3) process.env.WEBHOOK_URL = orig3;
     });
   });
 
@@ -280,16 +310,309 @@ describe('Webhook IPC Handlers (src/main/ipc/webhookHandlers.ts)', () => {
       expect(res.success).toBe(false);
       expect(res.error).toContain('Webhook returned HTTP 500');
     });
+
+    it('falls back to process.env.DEVPILOT_WEBHOOK_URL when webhookUrl is not provided', async () => {
+      process.env.DEVPILOT_WEBHOOK_URL = 'https://env.n8n.cloud/webhook/commit';
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff --git a/a.ts b/a.ts\n+hello',
+          stagedFiles: [{ path: 'a.ts', changeType: 'added', statusCode: 'A ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      const fetchSpy = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ commitMessage: 'feat: resolved from env url' }),
+      });
+      global.fetch = fetchSpy as any;
+
+      const res = await handleWebhookGenerateCommit({ repoPath: '/repo' });
+      expect(res.success).toBe(true);
+      expect(fetchSpy).toHaveBeenCalledWith('https://env.n8n.cloud/webhook/commit', expect.any(Object));
+      delete process.env.DEVPILOT_WEBHOOK_URL;
+    });
+
+    it('forwards customPrompt in webhook payload when provided', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff --git a/a.ts b/a.ts\n+hello',
+          stagedFiles: [{ path: 'a.ts', changeType: 'added', statusCode: 'A ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      const fetchSpy = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ commitMessage: 'feat: with prompt' }),
+      });
+      global.fetch = fetchSpy as any;
+
+      await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'https://example.com/webhook',
+        customPrompt: 'Focus on accessibility improvements',
+      });
+
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://example.com/webhook',
+        expect.objectContaining({
+          body: expect.stringContaining('"customPrompt":"Focus on accessibility improvements"'),
+        })
+      );
+    });
+
+    it('translates HTTP 401 into actionable Unauthorized message', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff',
+          stagedFiles: [{ path: 'f', changeType: 'modified', statusCode: 'M ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        text: async () => 'Unauthorized',
+      } as any);
+
+      const res = await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'https://example.com/webhook',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('HTTP 401: Unauthorized');
+      expect(res.error).toContain('Settings');
+    });
+
+    it('translates HTTP 403 into actionable Forbidden message', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff',
+          stagedFiles: [{ path: 'f', changeType: 'modified', statusCode: 'M ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => 'Forbidden',
+      } as any);
+
+      const res = await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'https://example.com/webhook',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('HTTP 403: Forbidden');
+      expect(res.error).toContain('Settings');
+    });
+
+    it('handles ECONNREFUSED with connection refused message', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff',
+          stagedFiles: [{ path: 'f', changeType: 'modified', statusCode: 'M ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      const connErr = new TypeError('fetch failed');
+      (connErr as any).cause = { code: 'ECONNREFUSED' };
+      global.fetch = vi.fn().mockRejectedValueOnce(connErr);
+
+      const res = await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'http://localhost:9999/webhook',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('Connection refused');
+    });
+
+    it('handles ENOTFOUND with DNS resolution failure message', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff',
+          stagedFiles: [{ path: 'f', changeType: 'modified', statusCode: 'M ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      const dnsErr = new TypeError('fetch failed');
+      (dnsErr as any).cause = { code: 'ENOTFOUND' };
+      global.fetch = vi.fn().mockRejectedValueOnce(dnsErr);
+
+      const res = await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'https://nonexistent-host-12345.xyz/webhook',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('DNS resolution error');
+    });
+
+    it('handles 30-second AbortError with timeout message', async () => {
+      vi.spyOn(gitService, 'getAllStagedDiff').mockResolvedValueOnce({
+        success: true,
+        data: {
+          repoPath: '/repo',
+          rawDiff: 'diff',
+          stagedFiles: [{ path: 'f', changeType: 'modified', statusCode: 'M ' }],
+          summary: { filesChanged: 1, insertions: 1, deletions: 0 },
+          isEmpty: false,
+        },
+      });
+      vi.spyOn(gitService, 'getStatus').mockResolvedValueOnce({
+        success: true,
+        data: { repoPath: '/repo', branch: 'main', isDetached: false, staged: [], unstaged: [], untracked: [] },
+      });
+
+      const abortErr = new Error('The operation was aborted');
+      abortErr.name = 'AbortError';
+      global.fetch = vi.fn().mockRejectedValueOnce(abortErr);
+
+      const res = await handleWebhookGenerateCommit({
+        repoPath: '/repo',
+        webhookUrl: 'https://example.com/slow',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toBe('Webhook request timed out after 30 seconds.');
+    });
   });
 
   describe('registerWebhookHandlers', () => {
-    it('registers WEBHOOK_GENERATE_COMMIT handler on ipcMain', () => {
+    it('registers WEBHOOK_GENERATE_COMMIT and SETTINGS_GET_WEBHOOK_CONFIG handlers on ipcMain', () => {
       const handleSpy = vi.spyOn(ipcMain, 'handle');
       registerWebhookHandlers();
       expect(handleSpy).toHaveBeenCalledWith(
         IPC_CHANNELS.WEBHOOK_GENERATE_COMMIT,
         expect.any(Function)
       );
+      expect(handleSpy).toHaveBeenCalledWith(
+        IPC_CHANNELS.SETTINGS_GET_WEBHOOK_CONFIG,
+        expect.any(Function)
+      );
+    });
+  });
+
+  describe('getEnvWebhookUrl & getEnvWebhookToken', () => {
+    const originalEnv = { ...process.env };
+
+    afterEach(() => {
+      process.env = { ...originalEnv };
+    });
+
+    it('resolves URL from DEVPILOT_WEBHOOK_URL', () => {
+      process.env.DEVPILOT_WEBHOOK_URL = 'http://localhost:5678/webhook/test';
+      expect(getEnvWebhookUrl()).toBe('http://localhost:5678/webhook/test');
+    });
+
+    it('resolves URL from N8N_WEBHOOK_URL alias when DEVPILOT_WEBHOOK_URL is unset', () => {
+      delete process.env.DEVPILOT_WEBHOOK_URL;
+      process.env.N8N_WEBHOOK_URL = 'https://n8n.cloud/webhook/alias';
+      expect(getEnvWebhookUrl()).toBe('https://n8n.cloud/webhook/alias');
+    });
+
+    it('resolves URL from WEBHOOK_URL alias when others are unset', () => {
+      delete process.env.DEVPILOT_WEBHOOK_URL;
+      delete process.env.N8N_WEBHOOK_URL;
+      process.env.WEBHOOK_URL = 'https://generic.webhook.org';
+      expect(getEnvWebhookUrl()).toBe('https://generic.webhook.org');
+    });
+
+    it('resolves token with correct precedence (DEVPILOT_WEBHOOK_TOKEN > DEVPILOT_API_KEY > X_API_KEY > N8N_WEBHOOK_TOKEN)', () => {
+      process.env.DEVPILOT_WEBHOOK_TOKEN = 'token-1';
+      process.env.DEVPILOT_API_KEY = 'token-2';
+      expect(getEnvWebhookToken()).toBe('token-1');
+
+      delete process.env.DEVPILOT_WEBHOOK_TOKEN;
+      expect(getEnvWebhookToken()).toBe('token-2');
+
+      delete process.env.DEVPILOT_API_KEY;
+      process.env.X_API_KEY = 'token-3';
+      expect(getEnvWebhookToken()).toBe('token-3');
+
+      delete process.env.X_API_KEY;
+      process.env.N8N_WEBHOOK_TOKEN = 'token-4';
+      expect(getEnvWebhookToken()).toBe('token-4');
+    });
+  });
+
+  describe('handleGetWebhookConfig', () => {
+    const originalEnv = { ...process.env };
+
+    afterEach(() => {
+      process.env = { ...originalEnv };
+    });
+
+    it('returns resolved envWebhookUrl and hasEnvToken: false when no token exists', () => {
+      delete process.env.DEVPILOT_WEBHOOK_TOKEN;
+      delete process.env.DEVPILOT_API_KEY;
+      delete process.env.X_API_KEY;
+      delete process.env.N8N_WEBHOOK_TOKEN;
+      process.env.DEVPILOT_WEBHOOK_URL = 'http://example.com/webhook';
+
+      const res = handleGetWebhookConfig();
+      expect(res.success).toBe(true);
+      expect(res.data?.envWebhookUrl).toBe('http://example.com/webhook');
+      expect(res.data?.hasEnvToken).toBe(false);
+      expect(res.data?.source).toBe('env');
+    });
+
+    it('returns hasEnvToken: true when environment token is populated', () => {
+      process.env.DEVPILOT_WEBHOOK_TOKEN = 'secret-token';
+      const res = handleGetWebhookConfig();
+      expect(res.data?.hasEnvToken).toBe(true);
     });
   });
 });

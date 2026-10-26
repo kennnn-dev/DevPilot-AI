@@ -2,52 +2,59 @@
 
 ## Architecture
 DevPilot AI is a desktop application built with Electron, React, TypeScript, and Vite.
-It functions strictly as a safe, read-only Git status and staged diff inspector for local repositories.
+It functions as a safe, read-only Git status and staged diff inspector for local repositories, with an intelligent AI commit message generator powered by an n8n webhook integration.
 
 ```
-+-------------------------------------------------------------------------+
-|                               Renderer                                  |
-|  +-------------------------------------------------------------------+  |
-|  | Header: Folder Picker | Repo Path | Branch Badge | Refresh Button |  |
-|  +-------------------------------------------------------------------+  |
-|  | Sidebar: Changes List             | DiffViewer: Staged Diff View  |  |
-|  | - Staged Changes (M, A, D, R, C)  | - Unified diff hunks          |  |
-|  | - Unstaged Changes (M, D, T)      | - Line additions (+) & del (-) |  |
-|  | - Untracked Files (??)            | - Binary / Empty file notice  |  |
-|  +-------------------------------------------------------------------+  |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|                                        Renderer                                         |
+|  +-----------------------------------------------------------------------------------+  |
+|  | Header: Folder Picker | Repo Path | Branch Badge | Refresh Button | Actions       |  |
+|  +-----------------------------------------------------------------------------------+  |
+|  | Nav Rail: Workspaces | Settings (opens SettingsModal) | About                     |  |
+|  | Sidebar: Changes List (Staged, Unstaged, Untracked)                                |  |
+|  | DiffViewer: Staged Diff View (Unified diff hunks, syntax highlighting)             |  |
+|  | CommitGeneratorPanel: AI Commit Assistant (Dynamic dispatch via resolved config)  |  |
+|  +-----------------------------------------------------------------------------------+  |
+|  | Overlay: SettingsModal (Centralized URL & Token config, .env source indicator)    |  |
+|  +-----------------------------------------------------------------------------------+  |
++-----------------------------------------------------------------------------------------+
                                     ▲
                                     │ (Typed Preload Bridge via window.devPilot)
                                     ▼
-+-------------------------------------------------------------------------+
-|                         Electron Preload Bridge                         |
-|  - contextBridge.exposeInMainWorld('devPilot', api)                     |
-|  - contextIsolation: true, nodeIntegration: false, sandbox: true       |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|                                 Electron Preload Bridge                                 |
+|  - contextBridge.exposeInMainWorld('devPilot', api)                                     |
+|  - contextIsolation: true, nodeIntegration: false, sandbox: true                       |
+|  - Read-only Git APIs: openDirectory, getStatus, getStagedDiff, getAllStagedDiff       |
+|  - Webhook APIs: generateCommitMessage, getWebhookConfig                                |
++-----------------------------------------------------------------------------------------+
                                     ▲
-                                    │ (Read-Only IPC Channels)
+                                    │ (IPC Channels)
                                     ▼
-+-------------------------------------------------------------------------+
-|                           Main Process                                  |
-|  - Native Dialog: dialog.showOpenDialog({ properties: ['openDirectory'] })
-|  - Read-Only Git IPC Handlers:                                          |
-|      * 'dialog:open-directory'                                          |
-|      * 'git:get-status'                                                 |
-|      * 'git:get-staged-diff'                                            |
-|  - Safe Git Executor: child_process.execFile('git', args, options)      |
-|      * Argument injection protection with '--' delimiter                |
-|      * Zero mutative operations (no add, commit, push, reset)          |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|                                      Main Process                                       |
+|  - Security & Lifecycle: BrowserWindow with contextIsolation & production CSP           |
+|  - Env Loader: reads .env and ~/.devpilot.env at startup into process.env               |
+|  - Read-Only Git IPC Handlers:                                                          |
+|      * 'dialog:open-directory'                                                          |
+|      * 'git:get-status'                                                                 |
+|      * 'git:get-staged-diff'                                                            |
+|      * 'git:get-all-staged-diff'                                                        |
+|  - Webhook IPC Handlers:                                                                |
+|      * 'settings:get-webhook-config' (returns .env fallback values & status)            |
+|      * 'webhook:generate-commit' (dynamic payload dispatch with hybrid resolution)      |
+|  - HTTP Webhook Dispatcher: Node fetch with AbortController (30s timeout)               |
++-----------------------------------------------------------------------------------------+
                                     ▲
                                     │
                                     ▼
-+-------------------------------------------------------------------------+
-|                             Local Git CLI                               |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------------+
+|                           Local Git CLI & n8n Webhook Host                              |
++-----------------------------------------------------------------------------------------+
 ```
 
 ## Feature Inventory
-Every feature from the Survey phase is enumerated here with its assigned milestone:
+Every feature from initial and follow-up survey phases is enumerated here with its assigned milestone:
 
 | # | Feature | Description | Milestone | Source |
 |---|---------|-------------|-----------|--------|
@@ -74,6 +81,16 @@ Every feature from the Survey phase is enumerated here with its assigned milesto
 | 21 | F21: Production Build Pipeline | `npm run build` compiles main, preload, and renderer into `dist/` | M1 | Survey (spec_miner #22) |
 | 22 | F22: Unit & Integration Test Suite | Automated Vitest test suite verifying status parsing, diff, and non-git handling | M4 | Survey (spec_miner #23) |
 | 23 | F23: Complete Documentation | `README.md` with install, test run, dev instructions, and architecture | M4 | Survey (ORIGINAL_REQUEST § 44) |
+| 24 | F24: Centralized Settings Modal | Dedicated modal accessible from Navigation Sidebar "Settings" action | M7 | Follow-up Survey R1 |
+| 25 | F25: Settings Form & Actions | Webhook URL & token inputs, Save, Reset/Clear, error & success alerts | M7 | Follow-up Survey R1 |
+| 26 | F26: Configuration Persistence | Persists user webhook settings across application restarts | M7 | Follow-up Survey R1 |
+| 27 | F27: Hybrid Precedence Resolver | Precedence: User Settings (`localStorage`) > `.env` variables > Unconfigured | M6, M7 | Follow-up Survey R2 |
+| 28 | F28: IPC Query for Env Defaults | `settings:get-webhook-config` exposes `.env` fallback values & status to renderer | M6 | Follow-up Survey R2 |
+| 29 | F29: Main Process Webhook URL Fallback | `handleWebhookGenerateCommit` falls back to `process.env.DEVPILOT_WEBHOOK_URL` | M6 | Follow-up Survey R2 |
+| 30 | F30: Webhook Custom Prompt Forwarding | Forward `customPrompt: options.customPrompt` in dynamic webhook payload | M6 | Follow-up Survey R3 |
+| 31 | F31: Commit Generator Panel Refactor | Seamlessly consumes resolved config without redundant inline prompt drawers | M8 | Follow-up Survey R3 |
+| 32 | F32: Robust Error & Timeout Handling | User-facing messaging for connection errors, timeouts, invalid URLs, and auth failures | M8 | Follow-up Survey R3 |
+| 33 | F33: Refactor Test Coverage | Unit & integration tests for settings modal, resolver, handlers, and commit generator | M6, M7, M8 | Follow-up Survey R4 |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -81,72 +98,53 @@ Every feature from the Survey phase is enumerated here with its assigned milesto
 | M1 | Foundation, Tooling & Security | Project setup, Vite + Electron configs, TS, shared types, main window security, preload bridge scaffold, React foundation | None | DONE |
 | M2 | Core Git Service & Read-Only IPC | Safe Git executor (`execFile`), repo validator, branch resolver, porcelain `-z` status parser, staged diff parser, read-only IPC handlers, unit & integration tests | M1 | DONE |
 | M3 | Interactive UI & Diff Viewer | Header (picker, path, branch, refresh), Sidebar (staged, unstaged, untracked), DiffViewer (syntax highlighting, binary notice), empty/error states, useGitRepo hook | M2 | DONE |
-| M4 | Documentation & Verification | README.md, end-to-end integration tests, type checking validation, production build verification | M3 | IN_PROGRESS |
-| M5 | Final E2E Test Pass & Coverage Hardening | Phase 1: 100% pass of E2E Test Suite (Tiers 1-4). Phase 2: Tier 5 adversarial coverage hardening | M4, TEST_READY | PLANNED |
+| M4 | Documentation & Verification | README.md, end-to-end integration tests, type checking validation, production build verification | M3 | DONE |
+| M5 | Final E2E Test Pass (Initial) | Initial E2E pass for Git status and diff viewer | M4 | DONE |
+| M6 | Hybrid Config Resolution & Main Webhook Dispatch | IPC `settings:get-webhook-config`, fallback resolution in `webhookHandlers.ts`, forward `customPrompt`, preload bridge typing, resolver unit tests | M4 | DONE |
+| M7 | Centralized Settings Modal & Navigation Integration | `SettingsModal.tsx`, NavigationSidebar `data-testid="nav-settings-btn"`, `App.tsx` modal state, `webhookConfig.ts` resolver helpers, modal unit tests | M6 | DONE |
+| M8 | Dynamic Commit Generator Dispatch & Final Verification | Refactor `CommitGeneratorPanel.tsx` & `useCommitGenerator.ts` to consume resolved config, remove redundant drawer, handle errors, full `npm test` & `npm run typecheck` verification | M6, M7 | DONE |
 
 ## Interface Contracts
 
 ### Shared Types (`src/shared/types.ts`)
 ```typescript
-export type GitFileChangeType = 'modified' | 'added' | 'deleted' | 'renamed' | 'copied' | 'untracked';
-
-export interface GitFileStatus {
-  path: string;
-  oldPath?: string;
-  changeType: GitFileChangeType;
-  statusCode: string;
+export interface WebhookConfigDefaults {
+  envWebhookUrl: string;
+  hasEnvToken: boolean;
+  activeSource: 'user' | 'env' | 'none';
 }
 
-export interface GitStatusResult {
+export interface ResolvedWebhookConfig {
+  webhookUrl: string;
+  webhookToken?: string;
+  source: 'user' | 'env' | 'none';
+  envDefaults: {
+    webhookUrl: string;
+    hasToken: boolean;
+  };
+}
+
+export interface WebhookCommitPayload {
   repoPath: string;
   branch: string;
   isDetached: boolean;
-  staged: GitFileStatus[];
-  unstaged: GitFileStatus[];
-  untracked: GitFileStatus[];
-}
-
-export interface GitDiffHunkLine {
-  type: 'add' | 'delete' | 'context' | 'meta';
-  content: string;
-  oldLineNumber?: number;
-  newLineNumber?: number;
-}
-
-export interface GitDiffHunk {
-  header: string;
-  oldStart: number;
-  oldLines: number;
-  newStart: number;
-  newLines: number;
-  lines: GitDiffHunkLine[];
-}
-
-export interface GitDiffResult {
-  repoPath: string;
-  filePath: string;
-  rawDiff: string;
-  isBinary: boolean;
-  isEmpty: boolean;
-  hunks: GitDiffHunk[];
-}
-
-export interface IPCResult<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+  stagedFiles: GitFileStatus[];
+  diff: string;
+  diffSummary: {
+    totalFiles: number;
+    additions: number;
+    deletions: number;
+  };
+  customPrompt?: string;
 }
 
 export interface DevPilotAPI {
   openDirectory: () => Promise<string | null>;
   getStatus: (repoPath: string) => Promise<IPCResult<GitStatusResult>>;
   getStagedDiff: (repoPath: string, filePath: string, oldPath?: string) => Promise<IPCResult<GitDiffResult>>;
-}
-
-declare global {
-  interface Window {
-    devPilot: DevPilotAPI;
-  }
+  getAllStagedDiff: (repoPath: string) => Promise<IPCResult<AllStagedDiffResult>>;
+  generateCommitMessage: (options: GenerateCommitOptions) => Promise<IPCResult<GenerateCommitResult>>;
+  getWebhookConfig?: () => Promise<IPCResult<ResolvedWebhookConfig>>;
 }
 ```
 
@@ -154,54 +152,56 @@ declare global {
 - `dialog:open-directory`: Invoked with no arguments. Returns `string | null`.
 - `git:get-status`: Invoked with `(repoPath: string)`. Returns `IPCResult<GitStatusResult>`.
 - `git:get-staged-diff`: Invoked with `({ repoPath: string, filePath: string, oldPath?: string })`. Returns `IPCResult<GitDiffResult>`.
+- `git:get-all-staged-diff`: Invoked with `(repoPath: string)`. Returns `IPCResult<AllStagedDiffResult>`.
+- `webhook:generate-commit`: Invoked with `(options: GenerateCommitOptions)`. Returns `IPCResult<GenerateCommitResult>`.
+- `settings:get-webhook-config`: Invoked with no arguments. Returns `IPCResult<ResolvedWebhookConfig>`.
 
 ## Code Layout
 ```
 /home/wks-dev-17/Desktop/DevPilot/
-├── package.json                 # Dependencies and npm scripts
-├── tsconfig.json                # TypeScript project configuration
-├── vite.config.ts               # Unified Vite + vite-plugin-electron build config
-├── vitest.config.ts             # Vitest configuration with happy-dom
-├── index.html                   # HTML entry point for renderer
-├── README.md                    # Project documentation
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts
+├── index.html
+├── README.md
 ├── src/
-│   ├── shared/                  # Exclusively owned by M1 (types, contracts)
-│   │   ├── types.ts
-│   │   └── ipcChannels.ts
-│   ├── main/                    # Owned by M1 & M2
-│   │   ├── index.ts             # App lifecycle & BrowserWindow creation (M1)
-│   │   ├── ipc/                 # IPC handlers (M2)
+│   ├── shared/
+│   │   ├── types.ts                    # Owned by M6
+│   │   └── ipcChannels.ts              # Owned by M6
+│   ├── main/
+│   │   ├── index.ts
+│   │   ├── ipc/
 │   │   │   ├── dialogHandlers.ts
-│   │   │   └── gitHandlers.ts
-│   │   └── git/                 # Git services (M2)
-│   │       ├── executor.ts
-│   │       ├── repoValidator.ts
-│   │       ├── branchDetector.ts
-│   │       ├── statusParser.ts
-│   │       └── diffParser.ts
-│   ├── preload/                 # Owned by M1
-│   │   └── index.ts
-│   └── renderer/                # Owned by M3
+│   │   │   ├── gitHandlers.ts
+│   │   │   └── webhookHandlers.ts      # Owned by M6
+│   │   └── utils/
+│   │       └── envLoader.ts
+│   ├── preload/
+│   │   └── index.ts                    # Owned by M6
+│   └── renderer/
 │       ├── main.tsx
-│       ├── App.tsx
+│       ├── App.tsx                     # Owned by M7
 │       ├── components/
-│       │   ├── Header.tsx
-│       │   ├── Sidebar.tsx
-│       │   ├── FileList.tsx
-│       │   ├── DiffViewer.tsx
-│       │   ├── EmptyState.tsx
-│       │   └── ErrorBanner.tsx
+│       │   ├── NavigationSidebar.tsx   # Owned by M7
+│       │   ├── SettingsModal/          # Owned by M7
+│       │   │   └── SettingsModal.tsx
+│       │   └── CommitGenerator/        # Owned by M8
+│       │       └── CommitGeneratorPanel.tsx
 │       ├── hooks/
-│       │   └── useGitRepo.ts
+│       │       └── useCommitGenerator.ts # Owned by M8
+│       ├── services/
+│       │   └── webhookConfig.ts        # Owned by M6 & M7
 │       └── styles/
-│           └── index.css
-└── tests/                       # Owned by E2E Testing Track and M4
+│           └── index.css               # Owned by M7
+└── tests/
     ├── setup.ts
     ├── unit/
-    │   ├── statusParser.test.ts
-    │   ├── diffParser.test.ts
-    │   └── repoValidator.test.ts
+    │   ├── webhookConfigResolver.test.ts # Owned by M6
+    │   ├── webhookHandlers.test.ts       # Owned by M6
+    │   ├── settingsModal.test.tsx        # Owned by M7
+    │   ├── navigationSidebar.test.tsx    # Owned by M7
+    │   └── commitGeneratorUI.test.tsx    # Owned by M8
     └── integration/
-        ├── gitOps.test.ts
-        └── ipcSecurity.test.ts
+        └── commitGeneratorDynamicDispatch.test.ts # Owned by M8
 ```

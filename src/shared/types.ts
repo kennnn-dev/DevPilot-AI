@@ -160,12 +160,40 @@ export interface WebhookDiffSummary {
   deletions: number;
 }
 
+export type ConfigSource = 'user' | 'env' | 'none';
+
+/**
+ * Snapshot of environment variable defaults detected by the Main process.
+ */
+export interface WebhookConfigDefaults {
+  envWebhookUrl: string;
+  hasEnvToken: boolean;
+  activeSource?: ConfigSource;
+}
+
+/**
+ * Resolved webhook configuration payload returned across Electron IPC.
+ */
+export interface ResolvedWebhookConfig {
+  webhookUrl: string;
+  webhookToken?: string;
+  source: ConfigSource;
+  envDefaults: {
+    webhookUrl: string;
+    hasToken: boolean;
+  };
+  url?: string;
+  token?: string;
+}
+
 /**
  * Complete structured payload dispatched to the n8n webhook.
  */
 export interface WebhookCommitPayload {
   repository: WebhookRepositoryContext;
+  repoPath?: string;
   branch?: string;
+  isDetached?: boolean;
   stagedFiles: WebhookStagedFile[];
   diffSummary: WebhookDiffSummary;
   diff: string;
@@ -189,7 +217,7 @@ export interface GitAllStagedDiffResult {
  */
 export interface WebhookGenerateCommitOptions {
   repoPath: string;
-  webhookUrl: string;
+  webhookUrl?: string;
   webhookToken?: string;
   customPrompt?: string;
 }
@@ -257,6 +285,11 @@ export interface DevPilotAPI {
    * @param options Target repository and webhook endpoint configuration
    */
   generateCommitMessage: (options: WebhookGenerateCommitOptions) => Promise<IPCResult<GeneratedCommitResult>>;
+
+  /**
+   * Queries environment-configured webhook defaults and active resolution from Main process.
+   */
+  getWebhookConfig?: () => Promise<IPCResult<ResolvedWebhookConfig>>;
 }
 
 /**

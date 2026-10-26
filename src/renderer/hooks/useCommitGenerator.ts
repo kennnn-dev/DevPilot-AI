@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react';
-import type { ParsedConventionalCommit } from '../../shared/types';
+import type { ParsedConventionalCommit, WebhookGenerateCommitOptions } from '../../shared/types';
 import { parseConventionalCommit } from '../services/conventionalCommitParser';
+import {
+  resolveEffectiveWebhookConfig,
+  getWebhookUrl,
+  getWebhookToken,
+} from '../services/webhookConfig';
 
 export interface RepoCommitState {
   isGenerating: boolean;
@@ -73,7 +78,7 @@ export function useCommitGenerator(activeRepoPath: string | null) {
   );
 
   const generateCommit = useCallback(
-    async (repoPath: string, webhookUrl: string, prompt?: string): Promise<boolean> => {
+    async (repoPath: string, webhookUrl?: string, prompt?: string): Promise<boolean> => {
       if (!repoPath) return false;
       const targetPrompt = prompt !== undefined ? prompt : currentState.customPrompt;
 
@@ -88,17 +93,40 @@ export function useCommitGenerator(activeRepoPath: string | null) {
       }
 
       try {
-        const tokenFromStorage =
-          typeof localStorage !== 'undefined'
-            ? localStorage.getItem('devpilot_n8n_webhook_token_v1') || undefined
-            : undefined;
+        let resolvedUrl = (webhookUrl || '').trim();
+        let resolvedToken = getWebhookToken() || undefined;
 
-        const res = await window.devPilot.generateCommitMessage({
+        // If URL not provided by caller, dynamically resolve effective config
+        if (!resolvedUrl) {
+          try {
+            const config = await resolveEffectiveWebhookConfig();
+            if (config && config.webhookUrl) {
+              resolvedUrl = config.webhookUrl.trim();
+            }
+            if (config && config.webhookToken) {
+              resolvedToken = config.webhookToken.trim();
+            }
+          } catch {
+            resolvedUrl = getWebhookUrl().trim();
+          }
+        }
+
+        const payload: WebhookGenerateCommitOptions = {
           repoPath,
-          webhookUrl,
-          webhookToken: tokenFromStorage,
-          customPrompt: targetPrompt || undefined,
-        });
+        };
+
+        if (resolvedUrl) {
+          payload.webhookUrl = resolvedUrl;
+        }
+        if (resolvedToken) {
+          payload.webhookToken = resolvedToken;
+        }
+        const trimmedPrompt = (targetPrompt !== undefined ? targetPrompt : currentState.customPrompt)?.trim();
+        if (trimmedPrompt && trimmedPrompt.length > 0) {
+          payload.customPrompt = trimmedPrompt;
+        }
+
+        const res = await window.devPilot.generateCommitMessage(payload);
 
         if (res.success && res.data) {
           updateState(repoPath, {

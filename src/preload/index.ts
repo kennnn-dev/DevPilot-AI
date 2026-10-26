@@ -8,6 +8,7 @@ import type {
   WebhookGenerateCommitOptions,
   GeneratedCommitResult,
   IPCResult,
+  ResolvedWebhookConfig,
 } from '../shared/types';
 
 /**
@@ -102,6 +103,13 @@ export const api: DevPilotAPI = {
       };
     }
     return await ipcRenderer.invoke(IPC_CHANNELS.WEBHOOK_GENERATE_COMMIT, options);
+  },
+
+  /**
+   * Queries environment-configured webhook defaults and active resolution from Main process.
+   */
+  getWebhookConfig: async (): Promise<IPCResult<ResolvedWebhookConfig>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.GET_WEBHOOK_CONFIG);
   },
 };
 
