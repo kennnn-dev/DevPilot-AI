@@ -5,10 +5,11 @@ import type {
   GitStatusResult,
   GitDiffResult,
   GitAllStagedDiffResult,
-  WebhookGenerateCommitOptions,
+  GenerateCommitOptions,
   GeneratedCommitResult,
   IPCResult,
   ResolvedWebhookConfig,
+  ResolvedAIConfig,
 } from '../shared/types';
 
 /**
@@ -91,10 +92,10 @@ export const api: DevPilotAPI = {
   },
 
   /**
-   * Dispatches staged changes to an n8n webhook endpoint to generate a Conventional Commit message.
+   * Dispatches staged changes to an AI provider or webhook endpoint to generate a Conventional Commit message.
    */
   generateCommitMessage: async (
-    options: WebhookGenerateCommitOptions
+    options: GenerateCommitOptions
   ): Promise<IPCResult<GeneratedCommitResult>> => {
     if (!options || typeof options !== 'object') {
       return {
@@ -102,7 +103,7 @@ export const api: DevPilotAPI = {
         error: 'Options must be an object.',
       };
     }
-    return await ipcRenderer.invoke(IPC_CHANNELS.WEBHOOK_GENERATE_COMMIT, options);
+    return await ipcRenderer.invoke(IPC_CHANNELS.AI_GENERATE_COMMIT, options);
   },
 
   /**
@@ -110,6 +111,13 @@ export const api: DevPilotAPI = {
    */
   getWebhookConfig: async (): Promise<IPCResult<ResolvedWebhookConfig>> => {
     return await ipcRenderer.invoke(IPC_CHANNELS.GET_WEBHOOK_CONFIG);
+  },
+
+  /**
+   * Queries multi-provider AI configuration and environment defaults from Main process.
+   */
+  getAIConfig: async (): Promise<IPCResult<ResolvedAIConfig>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_AI_CONFIG);
   },
 };
 

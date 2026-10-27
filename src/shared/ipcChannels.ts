@@ -53,6 +53,23 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_WEBHOOK_CONFIG: 'settings:get-webhook-config',
   GET_WEBHOOK_CONFIG: 'settings:get-webhook-config',
 
+  /**
+   * Dispatches staged changes to active AI provider (Ollama, OpenAI, Gemini, Webhook) to generate Conventional Commit.
+   * Main handler: aiService.generateCommitMessage(options)
+   * Payload: GenerateCommitOptions
+   * Return: IPCResult<GeneratedCommitResult>
+   */
+  AI_GENERATE_COMMIT: 'ai:generate-commit',
+
+  /**
+   * Queries environment-configured multi-provider defaults across Ollama, OpenAI, Gemini, Webhook.
+   * Main handler: handleGetAIConfig()
+   * Payload: none
+   * Return: IPCResult<ResolvedAIConfig>
+   */
+  SETTINGS_GET_AI_CONFIG: 'settings:get-ai-config',
+  GET_AI_CONFIG: 'settings:get-ai-config',
+
   // Convenience aliases matching shorthand conventions
   OPEN_DIRECTORY: 'dialog:open-directory',
   GET_STATUS: 'git:get-status',

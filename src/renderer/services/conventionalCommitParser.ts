@@ -20,11 +20,20 @@ export function cleanCommitMessage(raw: string): string {
   if (!raw || typeof raw !== 'string') return '';
   let cleaned = raw.trim();
 
-  // Strip markdown code fences if wrapped: ```commit ... ``` or ``` ... ```
-  const codeBlockMatch = cleaned.match(/^```(?:commit|git|markdown|text|json)?\r?\n([\s\S]*?)\r?\n```$/m);
-  if (codeBlockMatch) {
-    cleaned = codeBlockMatch[1].trim();
+  const prefixRegex =
+    /^(?:(?:Sure!?|Certainly!?|Okay!?),?\s+)?(?:Here(?:'s|\s+(?:is|are))\s+(?:the|a|your)\s+(?:suggested\s+|proposed\s+|generated\s+)?commit\s+messages?(?:\s+for\s+your\s+changes)?:?|(?:Suggested|Proposed|Generated|Commit)\s+commit\s+messages?:?|Suggested\s+messages?:?|Proposed\s+messages?:?|Commit\s+messages?:?|Here's\s+(?:a|the|your)\s+commit\s+messages?:?)\s*/i;
+
+  cleaned = cleaned.replace(prefixRegex, '').trim();
+
+  // Strip markdown code fences ONLY if the entire message is enclosed in fences
+  if (cleaned.startsWith('```')) {
+    const match = cleaned.match(/^```(?:[a-zA-Z0-9_-]+)?\s*\r?\n([\s\S]*?)(?:\r?\n)?```\s*$/);
+    if (match) {
+      cleaned = match[1].trim();
+    }
   }
+
+  cleaned = cleaned.replace(prefixRegex, '').trim();
 
   // Strip surrounding quotes
   if (
@@ -34,8 +43,6 @@ export function cleanCommitMessage(raw: string): string {
     cleaned = cleaned.slice(1, -1).trim();
   }
 
-  // Strip conversational prefixes from LLM
-  const prefixRegex = /^(?:Here\s+(?:is|are)\s+(?:the|a)\s+commit\s+message(?:\s+for\s+your\s+changes)?:?|Suggested\s+commit\s+message:?|Proposed\s+commit\s+message:?|Commit\s+message:?|Here's\s+(?:a|the|your)\s+commit\s+message:?)\s*/i;
   cleaned = cleaned.replace(prefixRegex, '').trim();
 
   return cleaned;

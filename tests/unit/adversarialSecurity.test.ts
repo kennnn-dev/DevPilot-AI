@@ -267,7 +267,7 @@ describe('Adversarial Stress Test: Preload Bridge & Security Boundaries', () => 
     it('api object structure and immutability check', () => {
       // Check if api is an object with only expected methods
       const keys = Object.keys(exposedApi);
-      expect(keys.sort()).toEqual(['getAllStagedDiff', 'generateCommitMessage', 'getStagedDiff', 'getStatus', 'getWebhookConfig', 'openDirectory'].sort());
+      expect(keys.sort()).toEqual(['getAIConfig', 'getAllStagedDiff', 'generateCommitMessage', 'getStagedDiff', 'getStatus', 'getWebhookConfig', 'openDirectory'].sort());
 
       // Check whether api is frozen
       const isFrozen = Object.isFrozen(exposedApi);

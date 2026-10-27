@@ -2334,3 +2334,163 @@ html, body, #root {
   background: var(--accent-blue-hover);
 }
 
+/* ==========================================================================
+   Multi-Provider Settings Styles (Milestone M10)
+   ========================================================================== */
+
+.settings-provider-group {
+  margin-bottom: 2px;
+}
+
+.settings-select {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.settings-select option {
+  background-color: var(--bg-card, #1e1e1e);
+  color: var(--text-main, #ffffff);
+  padding: 8px 12px;
+}
+
+.settings-model-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.settings-preset-label {
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 500;
+  margin-right: 2px;
+}
+
+.settings-preset-chip {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: var(--font-mono, monospace);
+  background: var(--bg-surface, #252526);
+  border: 1px solid var(--border-color, #3c3c3c);
+  color: var(--text-secondary, #cccccc);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-preset-chip:hover {
+  background: var(--bg-card-hover, #2a2d2e);
+  color: var(--text-main, #ffffff);
+  border-color: var(--border-active, #007acc);
+}
+
+.settings-preset-chip.active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: var(--accent-blue, #3b82f6);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Milestone M11: CommitGeneratorPanel Multi-Provider Enhancements
+   ========================================================================== */
+
+.commit-generator-provider-badge,
+.commit-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.commit-generator-provider-badge.provider-badge-ollama,
+.commit-provider-badge.provider-badge-ollama {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.35);
+}
+
+.commit-generator-provider-badge.provider-badge-openai,
+.commit-provider-badge.provider-badge-openai {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.commit-generator-provider-badge.provider-badge-gemini,
+.commit-provider-badge.provider-badge-gemini {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.commit-generator-provider-badge.provider-badge-webhook,
+.commit-provider-badge.provider-badge-webhook {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.generator-unconfigured-banner,
+.unconfigured-banner {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: #fde68a;
+}
+
+.generator-unconfigured-banner .unconfigured-content,
+.unconfigured-banner .unconfigured-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.generator-unconfigured-banner .unconfigured-actions,
+.unconfigured-banner .unconfigured-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-retry-commit {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-retry-commit:hover {
+  background: #b91c1c;
+}
+
+
+

@@ -163,6 +163,89 @@ export interface WebhookDiffSummary {
 export type ConfigSource = 'user' | 'env' | 'none';
 
 /**
+ * Supported AI provider backends for commit message generation.
+ */
+export type AIProvider = 'webhook' | 'ollama' | 'openai' | 'gemini';
+
+export const AI_PROVIDERS: readonly AIProvider[] = [
+  'webhook',
+  'ollama',
+  'openai',
+  'gemini',
+] as const;
+
+/**
+ * Configuration options for generic / n8n HTTP webhooks.
+ */
+export interface WebhookConfig {
+  webhookUrl: string;
+  webhookToken?: string;
+}
+
+/**
+ * Configuration options for Local Ollama daemon.
+ */
+export interface OllamaConfig {
+  baseUrl: string; // Defaults to 'http://localhost:11434'
+  model: string;   // Defaults to 'llama3.2'
+}
+
+/**
+ * Configuration options for OpenAI Chat Completions API.
+ */
+export interface OpenAIConfig {
+  apiKey: string;
+  model: string;   // Defaults to 'gpt-4o-mini'
+  baseUrl?: string; // Optional custom endpoint, defaults to 'https://api.openai.com/v1'
+}
+
+/**
+ * Configuration options for Google Gemini REST API.
+ */
+export interface GeminiConfig {
+  apiKey: string;
+  model: string;   // Defaults to 'gemini-1.5-flash'
+}
+
+/**
+ * Unified user settings stored in client localStorage.
+ * Maintains independent configuration per provider.
+ */
+export interface AISettings {
+  activeProvider: AIProvider;
+  webhook: WebhookConfig;
+  ollama: OllamaConfig;
+  openai: OpenAIConfig;
+  gemini: GeminiConfig;
+}
+
+/**
+ * Complete resolved AI configuration merging user settings with environment defaults.
+ */
+export interface ResolvedAIConfig {
+  activeProvider: AIProvider;
+  providerConfigs: {
+    webhook: WebhookConfig;
+    ollama: OllamaConfig;
+    openai: OpenAIConfig;
+    gemini: GeminiConfig;
+  };
+  sources: Record<AIProvider, ConfigSource>;
+  source?: Record<AIProvider, ConfigSource>; // Backward-compatible alias
+  envDefaults: {
+    activeProvider?: AIProvider;
+    webhookUrl?: string;
+    hasWebhookToken?: boolean;
+    ollamaBaseUrl?: string;
+    ollamaModel?: string;
+    hasOpenAiKey?: boolean;
+    openAiModel?: string;
+    hasGeminiKey?: boolean;
+    geminiModel?: string;
+  };
+}
+
+/**
  * Snapshot of environment variable defaults detected by the Main process.
  */
 export interface WebhookConfigDefaults {
@@ -213,14 +296,37 @@ export interface GitAllStagedDiffResult {
 }
 
 /**
- * Options provided when requesting commit message generation.
+ * Alias for GitAllStagedDiffResult matching PROJECT.md interface contract.
  */
-export interface WebhookGenerateCommitOptions {
+export type AllStagedDiffResult = GitAllStagedDiffResult;
+
+/**
+ * Options provided when requesting commit message generation across any provider.
+ */
+export interface GenerateCommitOptions {
   repoPath: string;
+  provider?: AIProvider;
+  // Webhook-specific overrides
   webhookUrl?: string;
   webhookToken?: string;
+  // Ollama-specific overrides
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
+  // OpenAI-specific overrides
+  openaiApiKey?: string;
+  openaiModel?: string;
+  openaiBaseUrl?: string;
+  // Gemini-specific overrides
+  geminiApiKey?: string;
+  geminiModel?: string;
+  // Common prompt override / user instructions
   customPrompt?: string;
 }
+
+/**
+ * Backward compatibility alias for legacy webhook callers.
+ */
+export type WebhookGenerateCommitOptions = GenerateCommitOptions;
 
 /**
  * Structured Conventional Commit parsed conforming to specification v1.0.0.
@@ -243,6 +349,11 @@ export interface GeneratedCommitResult {
   parsed: ParsedConventionalCommit;
   rawResponse?: unknown;
 }
+
+/**
+ * Backward compatibility alias matching PROJECT.md interface contract.
+ */
+export type GenerateCommitResult = GeneratedCommitResult;
 
 /**
  * Safe, read-only API exposed to the Renderer window via Preload contextBridge.
@@ -281,15 +392,20 @@ export interface DevPilotAPI {
   getAllStagedDiff: (repoPath: string) => Promise<IPCResult<GitAllStagedDiffResult>>;
 
   /**
-   * Dispatches staged changes to an n8n webhook endpoint to generate a Conventional Commit message.
-   * @param options Target repository and webhook endpoint configuration
+   * Dispatches staged changes to an AI provider or webhook endpoint to generate a Conventional Commit message.
+   * @param options Target repository and provider configuration
    */
-  generateCommitMessage: (options: WebhookGenerateCommitOptions) => Promise<IPCResult<GeneratedCommitResult>>;
+  generateCommitMessage: (options: GenerateCommitOptions) => Promise<IPCResult<GeneratedCommitResult>>;
 
   /**
    * Queries environment-configured webhook defaults and active resolution from Main process.
    */
   getWebhookConfig?: () => Promise<IPCResult<ResolvedWebhookConfig>>;
+
+  /**
+   * Queries multi-provider AI configuration and environment defaults from Main process.
+   */
+  getAIConfig?: () => Promise<IPCResult<ResolvedAIConfig>>;
 }
 
 /**
