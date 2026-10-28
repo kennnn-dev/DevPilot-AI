@@ -12,6 +12,9 @@ import {
   Key,
   Cpu,
   Bot,
+  ChevronDown,
+  Check,
+  Sparkles,
 } from 'lucide-react';
 import {
   getActiveProvider,
@@ -83,6 +86,40 @@ export function setStoredGeminiConfig(apiKey: string, model: string): void {
 }
 export const clearStoredGeminiConfig = resetGeminiConfig;
 
+export interface ProviderOption {
+  value: AIProvider;
+  label: string;
+  description: string;
+  icon: React.ReactNode;
+}
+
+export const PROVIDER_OPTIONS: ProviderOption[] = [
+  {
+    value: 'webhook',
+    label: 'Custom Webhook',
+    description: 'Custom HTTP endpoint for commit generation',
+    icon: <Bot size={14} />,
+  },
+  {
+    value: 'ollama',
+    label: 'Local Ollama',
+    description: 'Offline privacy-first local LLM daemon',
+    icon: <Cpu size={14} />,
+  },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    description: 'Cloud GPT-4o / GPT-4o-mini models',
+    icon: <Server size={14} />,
+  },
+  {
+    value: 'gemini',
+    label: 'Google Gemini',
+    description: 'Google Gemini 1.5 Flash / Pro models',
+    icon: <Sparkles size={14} />,
+  },
+];
+
 export interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -107,6 +144,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   // Active provider selector state (defaults to 'webhook' for clean backward compatibility)
   const [activeProvider, setActiveProviderState] = useState<AIProvider>('webhook');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Webhook fields
   const [webhookUrl, setWebhookUrlState] = useState('');
@@ -289,6 +328,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
   }, [isOpen, initialEnvDefaults]);
 
+  // Close custom dropdown when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDropdownOpen(false);
+    }
+  }, [isOpen]);
+
+  // Click-outside listener for provider dropdown menu
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   // Escape key listener
   useEffect(() => {
     if (!isOpen) return;
@@ -296,7 +358,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        if (isDropdownOpen) {
+          setIsDropdownOpen(false);
+        } else {
+          onClose();
+        }
       }
     };
 
@@ -304,7 +370,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isDropdownOpen]);
 
   // AutoFocus on primary input when opened
   useEffect(() => {
@@ -621,24 +687,97 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <form className="settings-modal-body" onSubmit={handleSave}>
           {/* Provider Selector Dropdown */}
           <div className="settings-form-group settings-provider-group">
-            <label htmlFor="settings-provider-select" className="settings-field-label">
+            <label
+              htmlFor="settings-provider-dropdown-trigger"
+              className="settings-field-label"
+              onClick={() => setIsDropdownOpen((prev) => !prev)}
+            >
               <span>AI Provider</span>
               <span className="settings-field-required">Active Backend</span>
             </label>
-            <div className="settings-input-wrapper">
-              <Bot size={14} className="settings-input-icon" />
+            <div className="settings-custom-select-container" ref={dropdownRef}>
+              {/* Native select retained for test automation and screen readers */}
               <select
                 id="settings-provider-select"
-                className="settings-input settings-select with-icon"
+                className="settings-native-select-hidden"
                 data-testid="settings-provider-select"
                 value={activeProvider}
                 onChange={(e) => handleProviderChange(e.target.value as AIProvider)}
+                tabIndex={-1}
+                aria-hidden="true"
               >
                 <option value="webhook">Custom Webhook</option>
                 <option value="ollama">Local Ollama</option>
                 <option value="openai">OpenAI</option>
                 <option value="gemini">Google Gemini</option>
               </select>
+
+              {/* Interactive Custom Dropdown Trigger */}
+              <button
+                type="button"
+                id="settings-provider-dropdown-trigger"
+                data-testid="settings-provider-dropdown-trigger"
+                className={`settings-custom-select-trigger ${isDropdownOpen ? 'open' : ''}`}
+                onClick={() => setIsDropdownOpen((prev) => !prev)}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsDropdownOpen((prev) => !prev);
+                  }
+                }}
+                aria-haspopup="listbox"
+                aria-expanded={isDropdownOpen}
+                aria-label={`AI Provider: ${(PROVIDER_OPTIONS.find((opt) => opt.value === activeProvider) || PROVIDER_OPTIONS[0]).label}`}
+              >
+                <div className="settings-custom-select-selected">
+                  <span className="settings-custom-select-icon">
+                    {(PROVIDER_OPTIONS.find((opt) => opt.value === activeProvider) || PROVIDER_OPTIONS[0]).icon}
+                  </span>
+                  <span className="settings-custom-select-label">
+                    {(PROVIDER_OPTIONS.find((opt) => opt.value === activeProvider) || PROVIDER_OPTIONS[0]).label}
+                  </span>
+                </div>
+                <ChevronDown
+                  size={14}
+                  className={`settings-custom-select-chevron ${isDropdownOpen ? 'rotated' : ''}`}
+                />
+              </button>
+
+              {/* Dropdown Options Popup */}
+              {isDropdownOpen && (
+                <ul
+                  className="settings-custom-select-menu"
+                  role="listbox"
+                  aria-label="AI Providers"
+                  data-testid="settings-provider-menu"
+                >
+                  {PROVIDER_OPTIONS.map((opt) => {
+                    const isSelected = opt.value === activeProvider;
+                    return (
+                      <li
+                        key={opt.value}
+                        role="option"
+                        aria-selected={isSelected}
+                        className={`settings-custom-select-option ${isSelected ? 'selected' : ''}`}
+                        data-testid={`settings-provider-option-${opt.value}`}
+                        onClick={() => {
+                          handleProviderChange(opt.value);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <div className="settings-option-left">
+                          <span className="settings-option-icon">{opt.icon}</span>
+                          <div className="settings-option-text">
+                            <span className="settings-option-title">{opt.label}</span>
+                            <span className="settings-option-desc">{opt.description}</span>
+                          </div>
+                        </div>
+                        {isSelected && <Check size={14} className="settings-option-check" />}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
             <span className="settings-field-hint">
               Select AI model backend for generating Conventional Commits.

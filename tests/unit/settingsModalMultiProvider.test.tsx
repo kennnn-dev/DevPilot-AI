@@ -113,6 +113,77 @@ describe('SettingsModal Multi-Provider Component (tests/unit/settingsModalMultiP
         expect(select.value).toBe('ollama');
       });
     });
+
+    it('opens custom dropdown menu on trigger click and switches provider on option click', async () => {
+      render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('settings-provider-dropdown-trigger')).toBeInTheDocument();
+      });
+
+      const trigger = screen.getByTestId('settings-provider-dropdown-trigger');
+      expect(trigger).toHaveTextContent('Custom Webhook');
+      expect(screen.queryByTestId('settings-provider-menu')).toBeNull();
+
+      // Open custom dropdown
+      fireEvent.click(trigger);
+      expect(screen.getByTestId('settings-provider-menu')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-provider-option-ollama')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-provider-option-openai')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-provider-option-gemini')).toBeInTheDocument();
+
+      // Click Ollama option
+      fireEvent.click(screen.getByTestId('settings-provider-option-ollama'));
+
+      // Menu closes after selection
+      expect(screen.queryByTestId('settings-provider-menu')).toBeNull();
+
+      // Trigger text and hidden select update
+      expect(trigger).toHaveTextContent('Local Ollama');
+      const select = screen.getByTestId('settings-provider-select') as HTMLSelectElement;
+      expect(select.value).toBe('ollama');
+
+      // Ollama fieldset renders
+      expect(screen.getByTestId('settings-ollama-url-input')).toBeInTheDocument();
+    });
+
+    it('closes custom dropdown menu when Escape key is pressed', async () => {
+      const onCloseMock = vi.fn();
+      render(<SettingsModal isOpen={true} onClose={onCloseMock} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('settings-provider-dropdown-trigger')).toBeInTheDocument();
+      });
+
+      const trigger = screen.getByTestId('settings-provider-dropdown-trigger');
+      fireEvent.click(trigger);
+      expect(screen.getByTestId('settings-provider-menu')).toBeInTheDocument();
+
+      // Escape should close dropdown without closing modal
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(screen.queryByTestId('settings-provider-menu')).toBeNull();
+      expect(onCloseMock).not.toHaveBeenCalled();
+
+      // Second Escape should now close modal
+      fireEvent.keyDown(window, { key: 'Escape' });
+      expect(onCloseMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes custom dropdown menu when clicking outside', async () => {
+      render(<SettingsModal isOpen={true} onClose={vi.fn()} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('settings-provider-dropdown-trigger')).toBeInTheDocument();
+      });
+
+      const trigger = screen.getByTestId('settings-provider-dropdown-trigger');
+      fireEvent.click(trigger);
+      expect(screen.getByTestId('settings-provider-menu')).toBeInTheDocument();
+
+      // Click outside (on backdrop or modal dialog)
+      fireEvent.mouseDown(document.body);
+      expect(screen.queryByTestId('settings-provider-menu')).toBeNull();
+    });
   });
 
   // =========================================================================
