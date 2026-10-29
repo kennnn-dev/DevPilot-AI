@@ -245,6 +245,29 @@ describe('Milestone 3 Presentation Components (src/renderer/components/)', () =>
       expect(fileItem.className).toContain('selected');
     });
 
+    it('invokes window.devPilot.openTerminal when Open in Terminal button is clicked', async () => {
+      const mockOpenTerminal = vi.fn().mockResolvedValue({ success: true, data: true });
+      (window as any).devPilot = {
+        openTerminal: mockOpenTerminal,
+      };
+
+      render(
+        <Sidebar
+          repoPath="/workspace/dirty-repo"
+          staged={mockStaged}
+          unstaged={mockUnstaged}
+          untracked={mockUntracked}
+          selectedFile={null}
+          onSelectFile={vi.fn()}
+        />
+      );
+
+      const openTermBtn = screen.getByTestId('repo-action-open-terminal');
+      expect(openTermBtn).toBeInTheDocument();
+      fireEvent.click(openTermBtn);
+      expect(mockOpenTerminal).toHaveBeenCalledWith('/workspace/dirty-repo');
+    });
+
     it('renders renamed file indicator showing oldPath arrow newPath', () => {
       const renamed: GitFileStatus[] = [
         { path: 'src/app.tsx', oldPath: 'src/index.tsx', changeType: 'renamed', statusCode: 'R ' },

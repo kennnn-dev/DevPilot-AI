@@ -437,6 +437,33 @@ export interface WorkspaceReviewOptions {
   geminiModel?: string;
 }
 
+export type ServiceType = 'laravel' | 'go' | 'node' | 'python' | 'shell' | 'docker' | 'custom';
+export type ServiceStatus = 'stopped' | 'starting' | 'running' | 'crashed';
+
+export interface WorkspaceService {
+  id: string;
+  name: string;
+  command: string;
+  args?: string[];
+  cwd: string;
+  type: ServiceType;
+  status: ServiceStatus;
+  detectedPort?: number | string;
+  detectedUrl?: string;
+  pid?: number;
+  startedAt?: number;
+  exitCode?: number | null;
+  error?: string;
+}
+
+export interface ServiceLogEntry {
+  id: string;
+  serviceId: string;
+  timestamp: number;
+  type: 'stdout' | 'stderr' | 'system';
+  text: string;
+}
+
 /**
  * Safe, read-only API exposed to the Renderer window via Preload contextBridge.
  */
@@ -494,6 +521,69 @@ export interface DevPilotAPI {
    * Queries multi-provider AI configuration and environment defaults from Main process.
    */
   getAIConfig?: () => Promise<IPCResult<ResolvedAIConfig>>;
+
+  /**
+   * Opens the OS native terminal emulator at the specified directory path.
+   */
+  openTerminal?: (targetPath: string) => Promise<IPCResult<boolean>>;
+
+  /**
+   * Discovers runnable services across the active workspace repositories or directory.
+   */
+  discoverServices?: (target: string | string[]) => Promise<IPCResult<WorkspaceService[]>>;
+
+  /**
+   * Starts a service by ID.
+   */
+  startService?: (serviceId: string) => Promise<IPCResult<WorkspaceService>>;
+
+  /**
+   * Stops a running service by ID.
+   */
+  stopService?: (serviceId: string) => Promise<IPCResult<WorkspaceService>>;
+
+  /**
+   * Restarts a service by ID.
+   */
+  restartService?: (serviceId: string) => Promise<IPCResult<WorkspaceService>>;
+
+  /**
+   * Starts all discovered services in parallel.
+   */
+  startAllServices?: () => Promise<IPCResult<WorkspaceService[]>>;
+
+  /**
+   * Gracefully stops all active services.
+   */
+  stopAllServices?: () => Promise<IPCResult<WorkspaceService[]>>;
+
+  /**
+   * Queries buffered output logs for a service or all services.
+   */
+  getServiceLogs?: (serviceId?: string) => Promise<IPCResult<ServiceLogEntry[]>>;
+
+  /**
+   * Clears buffered logs for a service or all services.
+   */
+  clearServiceLogs?: (serviceId?: string) => Promise<IPCResult<boolean>>;
+
+  /**
+   * Dynamically updates the runtime port or command configuration for a service.
+   */
+  updateServiceConfig?: (
+    serviceId: string,
+    updates: { port?: number | string; command?: string }
+  ) => Promise<IPCResult<WorkspaceService>>;
+
+  /**
+   * Subscribes to real-time service status changes.
+   */
+  onServiceStatusChanged?: (callback: (service: WorkspaceService) => void) => () => void;
+
+  /**
+   * Subscribes to real-time service log output.
+   */
+  onServiceLog?: (callback: (log: ServiceLogEntry) => void) => () => void;
 }
 
 /**

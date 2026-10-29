@@ -79,6 +79,28 @@ export const IPC_CHANNELS = {
   AI_REVIEW_WORKSPACE: 'ai:review-workspace',
   REVIEW_WORKSPACE: 'ai:review-workspace',
 
+  /**
+   * Opens the OS native terminal emulator at the specified directory path.
+   * Main handler: terminalLauncher.openTerminal(targetPath)
+   * Payload: targetPath (string)
+   * Return: IPCResult<boolean>
+   */
+  SYSTEM_OPEN_TERMINAL: 'system:open-terminal',
+  OPEN_TERMINAL: 'system:open-terminal',
+
+  /**
+   * Universal Workspace Services & Automation channels.
+   */
+  SERVICES_DISCOVER: 'services:discover',
+  SERVICES_START: 'services:start',
+  SERVICES_STOP: 'services:stop',
+  SERVICES_RESTART: 'services:restart',
+  SERVICES_START_ALL: 'services:start-all',
+  SERVICES_STOP_ALL: 'services:stop-all',
+  SERVICES_GET_LOGS: 'services:get-logs',
+  SERVICES_CLEAR_LOGS: 'services:clear-logs',
+  SERVICES_UPDATE_CONFIG: 'services:update-config',
+
   // Convenience aliases matching shorthand conventions
   OPEN_DIRECTORY: 'dialog:open-directory',
   GET_STATUS: 'git:get-status',
