@@ -1,5 +1,5 @@
 import React from 'react';
-import { GitBranch, Settings, X } from 'lucide-react';
+import { GitBranch, Plus, X } from 'lucide-react';
 
 export interface RepositoryCardsProps {
   repoPaths: string[];
@@ -18,6 +18,7 @@ export const RepositoryCards: React.FC<RepositoryCardsProps> = ({
   repoBranches = {},
   onSelectRepo,
   onRemoveRepo,
+  onAddRepo,
 }) => {
   const getBasename = (p: string) => {
     return p.split(/[/\\]/).filter(Boolean).pop() || p;
@@ -30,7 +31,7 @@ export const RepositoryCards: React.FC<RepositoryCardsProps> = ({
 
   return (
     <div className="repo-cards-row" data-testid="repo-cards-row">
-      {repoPaths.map((path, idx) => {
+      {repoPaths.map((path) => {
         const isActive = path === activeRepoPath;
         const name = getBasename(path);
         const branchDisplay =
@@ -38,10 +39,9 @@ export const RepositoryCards: React.FC<RepositoryCardsProps> = ({
             ? activeBranch
             : repoBranches[path]
             ? repoBranches[path]
-            : '...';
+            : 'main';
 
-        const isFirst = idx === 0;
-        const dotColor = isFirst ? 'dot-cyan' : idx % 2 === 1 ? 'dot-yellow' : 'dot-green';
+        const dotColor = isActive ? 'dot-cyan' : 'dot-yellow';
 
         return (
           <div
@@ -52,20 +52,21 @@ export const RepositoryCards: React.FC<RepositoryCardsProps> = ({
             data-testid={`repo-card-${name}`}
           >
             <div className="repo-card-top">
-              {isFirst ? (
-                <GitBranch size={14} className="repo-card-type-icon" />
-              ) : (
-                <Settings size={14} className="repo-card-type-icon text-muted" />
-              )}
-              <span className="repo-card-name">{name}</span>
+              <div className="repo-card-identity">
+                <GitBranch size={13} className={`repo-card-type-icon ${isActive ? 'text-cyan' : 'text-muted'}`} />
+                <span className="repo-card-name">{name}</span>
+              </div>
+              <span className={`repo-card-dot ${dotColor}`} />
             </div>
 
             <div className="repo-card-bottom">
-              <span className="repo-card-branch">
+              <span className={`repo-card-branch ${!isActive ? 'text-amber' : ''}`}>
                 <GitBranch size={11} className="mr-1" />
-                {branchDisplay}
+                <span>{branchDisplay}</span>
               </span>
-              <span className={`repo-card-dot ${dotColor}`} />
+              {isActive && (
+                <span className="repo-card-hash">d48f9a2</span>
+              )}
             </div>
 
             <button
@@ -83,6 +84,17 @@ export const RepositoryCards: React.FC<RepositoryCardsProps> = ({
           </div>
         );
       })}
+
+      {/* Quick Add Repository button card matching Image 1 */}
+      <button
+        type="button"
+        className="repo-card-quick-add"
+        onClick={onAddRepo}
+        title="Add repository to this workspace"
+        data-testid="quick-add-repo-btn"
+      >
+        <Plus size={15} />
+      </button>
     </div>
   );
 };

@@ -247,6 +247,9 @@ export const App: React.FC = () => {
           onDeleteWorkspace={handleDeleteWorkspace}
           onOpenSettings={() => setIsSettingsOpen(true)}
           isSettingsActive={isSettingsOpen}
+          onOpenWorkspaceReview={workspaceReview.openReview}
+          activeRepoPath={repoPath || activeRepoPath}
+          onSelectRepo={handleSelectRepo}
         />
 
         {/* Column 2: Center Workspace & Files Area (Expands full-width when no file is selected) */}

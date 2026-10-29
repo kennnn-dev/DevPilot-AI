@@ -141,6 +141,7 @@ export const Header: React.FC<HeaderProps> = ({
                   <Edit2 size={13} />
                 </button>
               )}
+              <span className="ws-badge-local">Local workspace</span>
             </div>
           )}
 
@@ -148,19 +149,21 @@ export const Header: React.FC<HeaderProps> = ({
             <span>
               {repoCount} {repoCount === 1 ? 'repository' : 'repositories'}
             </span>
-            <span className="subtitle-dot">•</span>
-            <span>Local workspace</span>
+            {folderName && (
+              <>
+                <span className="subtitle-dot">•</span>
+                <span className="repo-path-highlight">{folderName}</span>
+              </>
+            )}
 
             {/* Accessible elements for test assertions without visual clutter */}
             {repoPath ? (
               <span
-                className="repo-path-display-inline"
+                className="repo-path-display-inline sr-only"
                 title={repoPath}
                 data-testid="repo-path"
               >
-                <span className="subtitle-dot">•</span>
-                <span className="repo-path-highlight">{folderName}</span>
-                <span className="sr-only">({repoPath})</span>
+                ({repoPath})
               </span>
             ) : (
               <span className="sr-only" data-testid="repo-path-empty">

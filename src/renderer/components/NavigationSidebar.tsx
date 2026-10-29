@@ -10,6 +10,8 @@ import {
   X,
   Edit2,
   Trash2,
+  Sparkles,
+  GitBranch,
 } from 'lucide-react';
 import type { Workspace } from '../../shared/types';
 
@@ -24,6 +26,12 @@ export interface NavigationSidebarProps {
   onOpenSettings?: () => void;
   /** Whether the settings modal is currently active */
   isSettingsActive?: boolean;
+  /** Callback to trigger Workspace Review */
+  onOpenWorkspaceReview?: () => void;
+  /** Currently active repository path within the workspace */
+  activeRepoPath?: string | null;
+  /** Callback to select a repository directly from the tree */
+  onSelectRepo?: (path: string) => void;
 }
 
 export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
@@ -35,6 +43,9 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onDeleteWorkspace,
   onOpenSettings,
   isSettingsActive = false,
+  onOpenWorkspaceReview,
+  activeRepoPath,
+  onSelectRepo,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newWsName, setNewWsName] = useState('');
@@ -100,7 +111,20 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         >
           <Layers size={16} className="nav-item-icon" />
           <span>Workspaces</span>
+          <span className="nav-item-badge">{workspaces.length}</span>
         </div>
+        {onOpenWorkspaceReview && (
+          <button
+            type="button"
+            className="nav-item nav-item-ai"
+            title="AI Code Review"
+            onClick={onOpenWorkspaceReview}
+          >
+            <Sparkles size={16} className="nav-item-icon text-purple" />
+            <span>AI Code Review</span>
+            <span className="nav-pro-badge">PRO</span>
+          </button>
+        )}
         <button
           type="button"
           className={`nav-item ${isSettingsActive ? 'nav-item-active' : ''}`}
@@ -204,45 +228,68 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
               onClick={() => onSelectWorkspace(ws.id)}
               data-testid={`workspace-card-${ws.id}`}
             >
-              <div className="ws-card-icon-box">
-                <Folder size={15} className="ws-card-folder-icon" />
-              </div>
+              <div className="ws-card-main-row">
+                <div className="ws-card-icon-box">
+                  <Folder size={15} className="ws-card-folder-icon" />
+                </div>
 
-              <div className="ws-card-info">
-                <span className="ws-card-name">{ws.name}</span>
-                <span className="ws-card-count">
-                  {ws.repoPaths.length}{' '}
-                  {ws.repoPaths.length === 1 ? 'repository' : 'repositories'}
-                </span>
-              </div>
+                <div className="ws-card-info">
+                  <span className="ws-card-name">{ws.name}</span>
+                  <span className="ws-card-count">
+                    {ws.repoPaths.length}{' '}
+                    {ws.repoPaths.length === 1 ? 'repository' : 'repositories'}
+                  </span>
+                </div>
 
-              <div className="ws-card-actions">
-                {/* Active indicator dot matching Image */}
-                <span
-                  className={`ws-indicator-dot ${isActive ? 'dot-active' : 'dot-inactive'}`}
-                  title={isActive ? 'Active workspace' : 'Inactive'}
-                />
+                <div className="ws-card-actions">
+                  {/* Active indicator dot matching Image */}
+                  <span
+                    className={`ws-indicator-dot ${isActive ? 'dot-active' : 'dot-inactive'}`}
+                    title={isActive ? 'Active workspace' : 'Inactive'}
+                  />
 
-                <button
-                  type="button"
-                  className="ws-hover-btn"
-                  onClick={(e) => handleStartRename(ws, e)}
-                  title="Rename workspace"
-                >
-                  <Edit2 size={11} />
-                </button>
-
-                {workspaces.length > 1 && (
                   <button
                     type="button"
-                    className="ws-hover-btn ws-hover-delete"
-                    onClick={(e) => handleDelete(ws, e)}
-                    title="Delete workspace"
+                    className="ws-hover-btn"
+                    onClick={(e) => handleStartRename(ws, e)}
+                    title="Rename workspace"
                   >
-                    <Trash2 size={11} />
+                    <Edit2 size={11} />
                   </button>
-                )}
+
+                  {workspaces.length > 1 && (
+                    <button
+                      type="button"
+                      className="ws-hover-btn ws-hover-delete"
+                      onClick={(e) => handleDelete(ws, e)}
+                      title="Delete workspace"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  )}
+                </div>
               </div>
+
+              {/* Sub-item tree for active workspace repositories matching Image 1 */}
+              {isActive && ws.repoPaths && ws.repoPaths.length > 0 && (
+                <div className="ws-card-nested-repos" onClick={(e) => e.stopPropagation()}>
+                  {ws.repoPaths.map((p) => {
+                    const rName = p.split(/[/\\]/).filter(Boolean).pop() || p;
+                    const isSelected = p === activeRepoPath;
+                    return (
+                      <div
+                        key={p}
+                        className={`ws-nested-repo-item ${isSelected ? 'selected' : ''}`}
+                        onClick={() => onSelectRepo?.(p)}
+                        title={p}
+                      >
+                        <GitBranch size={11} className="ws-nested-repo-icon" />
+                        <span className="ws-nested-repo-name">{rName}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

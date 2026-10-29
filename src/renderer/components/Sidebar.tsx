@@ -4,7 +4,6 @@ import {
   ChevronUp,
   ChevronDown,
   CheckCircle2,
-  GitCommit,
   Layers,
   Eye,
   ArrowLeftRight,
@@ -12,6 +11,10 @@ import {
   MoreHorizontal,
   Folder,
   Sparkles,
+  Edit2,
+  Filter,
+  RotateCcw,
+  Check,
 } from 'lucide-react';
 import type { GitFileStatus } from '../../shared/types';
 import FileList from './FileList';
@@ -60,6 +63,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isRepoCardExpanded, setIsRepoCardExpanded] = useState(true);
   const [isCommitAssistantOpen, setIsCommitAssistantOpen] = useState(false);
   const [terminalLaunching, setTerminalLaunching] = useState(false);
+  const [filterQuery, setFilterQuery] = useState('');
+
+  const filterFn = (f: GitFileStatus) => {
+    if (!filterQuery.trim()) return true;
+    return f.path.toLowerCase().includes(filterQuery.toLowerCase());
+  };
+
+  const filteredStaged = staged.filter(filterFn);
+  const filteredUnstaged = unstaged.filter(filterFn);
+  const filteredUntracked = untracked.filter(filterFn);
 
   const handleOpenTerminal = async () => {
     if (!repoPath) return;
@@ -123,50 +136,61 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <span>{branch || 'main'}</span>
                   </span>
                   <span className="repo-status-tag tag-up-to-date">
+                    <Check size={11} className="mr-1" />
                     Up to date
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  className="repo-expand-trigger"
-                  title={isRepoCardExpanded ? 'Collapse' : 'Expand'}
-                >
-                  {isRepoCardExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                </button>
+                <div className="repo-card-meta-right">
+                  <span className="repo-sync-time">Last sync: 2 mins ago</span>
+                  <button
+                    type="button"
+                    className="repo-expand-trigger"
+                    title={isRepoCardExpanded ? 'Collapse' : 'Expand'}
+                  >
+                    {isRepoCardExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </button>
+                </div>
               </div>
 
-              {/* 3 Metric Cards matching Image */}
+              {/* 3 Metric Cards matching Image 1 */}
               {isRepoCardExpanded && (
                 <div className="repo-metrics-grid">
                   <div className="metric-card metric-staged">
                     <div className="metric-icon-box box-staged">
-                      <CheckCircle2 size={13} />
+                      <CheckCircle2 size={15} />
                     </div>
                     <div className="metric-text-group">
-                      <span className="metric-number">{staged.length}</span>
-                      <span className="metric-label">Staged</span>
+                      <span className="metric-label">Staged Changes</span>
+                      <span className="metric-number">{staged.length} files</span>
                     </div>
+                    <span className="metric-status-pill pill-clean">Clean</span>
                   </div>
 
                   <div className="metric-card metric-unstaged">
                     <div className="metric-icon-box box-unstaged">
-                      <GitCommit size={13} />
+                      <Edit2 size={14} />
                     </div>
                     <div className="metric-text-group">
-                      <span className="metric-number">{unstaged.length}</span>
-                      <span className="metric-label">Unstaged</span>
+                      <span className="metric-label">Unstaged Changes</span>
+                      <span className="metric-number text-amber">{unstaged.length} modified</span>
                     </div>
+                    <span className="metric-status-pill pill-diff">
+                      <span className="text-emerald">+8</span>
+                      <span className="diff-slash">/</span>
+                      <span className="text-rose">-3</span>
+                    </span>
                   </div>
 
                   <div className="metric-card metric-untracked">
                     <div className="metric-icon-box box-untracked">
-                      <Layers size={13} />
+                      <Layers size={14} />
                     </div>
                     <div className="metric-text-group">
-                      <span className="metric-number">{untracked.length}</span>
-                      <span className="metric-label">Untracked</span>
+                      <span className="metric-label">Untracked Files</span>
+                      <span className="metric-number text-cyan">{untracked.length} new</span>
                     </div>
+                    <span className="metric-status-pill pill-cyan">+165 lines</span>
                   </div>
                 </div>
               )}
@@ -183,25 +207,52 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             )}
 
-            {/* Files List Header matching Image: [x] Files (6) */}
+            {/* Files List Toolbar matching Image 1 */}
             <div className="files-section-bar">
-              <input
-                type="checkbox"
-                className="files-master-checkbox"
-                defaultChecked
-                readOnly
-                title="All Changed Files"
-              />
-              <span className="files-bar-title">Files ({totalChanges})</span>
+              <div className="files-bar-left">
+                <span className="files-bar-title">Files</span>
+                <span className="files-count-badge">{totalChanges}</span>
+              </div>
+
+              <div className="files-filter-box">
+                <Filter size={12} className="filter-icon" />
+                <input
+                  type="text"
+                  className="files-filter-input"
+                  placeholder="Filter changed files (⌘F)"
+                  value={filterQuery}
+                  onChange={(e) => setFilterQuery(e.target.value)}
+                />
+              </div>
+
+              <div className="files-bar-actions">
+                <button type="button" className="btn-files-action btn-stage-all" title="Stage all changes">
+                  <span className="btn-plus-icon">+</span>
+                  <span>Stage All</span>
+                </button>
+                <button type="button" className="btn-files-action btn-discard-all" title="Discard unstaged changes">
+                  <RotateCcw size={12} />
+                  <span>Discard All</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn-files-action btn-staged-pill"
+                  onClick={() => setIsCommitAssistantOpen((prev) => !prev)}
+                  title="Open AI Commit Assistant"
+                >
+                  <Sparkles size={12} />
+                  <span>{staged.length} staged</span>
+                </button>
+              </div>
             </div>
 
             {/* Categorized File Sections */}
             <div className="file-sections-container">
               {/* Staged Changes Section */}
               <FileList
-                title="Staged Changes"
-                count={staged.length}
-                files={staged}
+                title="STAGED CHANGES"
+                count={filteredStaged.length}
+                files={filteredStaged}
                 sectionId="staged"
                 selectedFile={selectedFile}
                 isSelectable={true}
@@ -223,9 +274,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Unstaged Changes Section */}
               <FileList
-                title="Changes"
-                count={unstaged.length}
-                files={unstaged}
+                title="CHANGES"
+                count={filteredUnstaged.length}
+                files={filteredUnstaged}
                 sectionId="unstaged"
                 selectedFile={selectedFile}
                 isSelectable={false}
@@ -236,9 +287,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
               {/* Untracked Files Section */}
               <FileList
-                title="Untracked Files"
-                count={untracked.length}
-                files={untracked}
+                title="UNTRACKED FILES"
+                count={filteredUntracked.length}
+                files={filteredUntracked}
                 sectionId="untracked"
                 selectedFile={selectedFile}
                 isSelectable={false}

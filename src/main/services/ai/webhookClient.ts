@@ -162,9 +162,10 @@ export async function generateWebhookCommit(
       },
     };
   } catch (err: unknown) {
-    const errorObj = err as { code?: string; message?: string; name?: string; cause?: { code?: string } };
-    const code = errorObj?.code || errorObj?.cause?.code;
-    const msg = errorObj?.message || String(err);
+    const errorObj = err as { code?: string; message?: string; name?: string; cause?: { code?: string; message?: string } };
+    const cause = errorObj?.cause;
+    const code = errorObj?.code || cause?.code;
+    const msg = `${errorObj?.message || ''} ${cause?.message || ''} ${String(err)}`;
 
     if (errorObj?.name === 'AbortError' || msg.includes('timed out after 30 seconds')) {
       return { success: false, error: 'Webhook request timed out after 30 seconds.' };
@@ -176,7 +177,8 @@ export async function generateWebhookCommit(
       code === 'ENOTFOUND' ||
       msg.includes('ENOTFOUND') ||
       msg.toLowerCase().includes('getaddrinfo') ||
-      msg.toLowerCase().includes('dns resolution')
+      msg.toLowerCase().includes('dns resolution') ||
+      msg.toLowerCase().includes('fetch failed')
     ) {
       return { success: false, error: 'Webhook request failed: Host not found (DNS resolution error). Check your webhook URL.' };
     }
