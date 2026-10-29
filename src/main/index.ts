@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url';
 import { registerDialogHandlers } from './ipc/dialogHandlers';
 import { registerGitHandlers } from './ipc/gitHandlers';
 import { registerWebhookHandlers } from './ipc/webhookHandlers';
+import { registerTerminalHandlers } from './ipc/terminalHandlers';
+import { registerServiceHandlers } from './ipc/serviceHandlers';
+import { serviceManager } from './services/services/serviceManager';
 import { stopWatchingRepo } from './git/repoWatcher';
 import { loadEnvFiles } from './utils/envLoader';
 
@@ -194,6 +197,8 @@ export function registerIpcHandlers(): void {
   registerDialogHandlers(() => mainWindow);
   registerGitHandlers();
   registerWebhookHandlers();
+  registerTerminalHandlers();
+  registerServiceHandlers();
 }
 
 /**
@@ -291,6 +296,13 @@ export function bootstrap(): void {
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
       }
+    });
+  });
+
+  // Ensure all background processes are cleanly terminated when quitting
+  app.on('before-quit', () => {
+    serviceManager.stopAll().catch((err) => {
+      console.warn('[DevPilot] Error stopping services on quit:', err);
     });
   });
 
