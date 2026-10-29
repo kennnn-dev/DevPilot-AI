@@ -10,6 +10,8 @@ import type {
   IPCResult,
   ResolvedWebhookConfig,
   ResolvedAIConfig,
+  WorkspaceReviewOptions,
+  WorkspaceReviewResult,
 } from '../shared/types';
 
 /**
@@ -118,6 +120,21 @@ export const api: DevPilotAPI = {
    */
   getAIConfig: async (): Promise<IPCResult<ResolvedAIConfig>> => {
     return await ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET_AI_CONFIG);
+  },
+
+  /**
+   * Analyzes active repository changes for cross-repository workspace impact and plain-English review.
+   */
+  reviewWorkspaceChanges: async (
+    options: WorkspaceReviewOptions
+  ): Promise<IPCResult<WorkspaceReviewResult>> => {
+    if (!options || typeof options !== 'object') {
+      return {
+        success: false,
+        error: 'Options must be an object.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.AI_REVIEW_WORKSPACE, options);
   },
 };
 

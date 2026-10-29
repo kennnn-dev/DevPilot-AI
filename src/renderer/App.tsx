@@ -8,6 +8,8 @@ import Sidebar from './components/Sidebar';
 import DiffViewer from './components/DiffViewer';
 import ErrorBanner from './components/ErrorBanner';
 import SettingsModal from './components/SettingsModal/SettingsModal';
+import WorkspaceReviewModal from './components/WorkspaceReview/WorkspaceReviewModal';
+import { useWorkspaceReview } from './hooks/useWorkspaceReview';
 
 /**
  * DevPilot AI Main Studio Component.
@@ -54,6 +56,12 @@ export const App: React.FC = () => {
 
   // Centralized settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = React.useState<boolean>(false);
+
+  // Workspace Change Explainer & Impact Review hook
+  const workspaceReview = useWorkspaceReview({
+    activeRepoPath: repoPath || activeRepoPath,
+    workspaceRepoPaths: activeWorkspace.repoPaths,
+  });
 
   // User-resizable width for the diff panel (persisted locally)
   const [diffWidth, setDiffWidth] = React.useState<number>(() => {
@@ -248,6 +256,7 @@ export const App: React.FC = () => {
             onOpenDirectory={handleOpenDirectory}
             onOpenFolder={handleOpenDirectory}
             onRefresh={handleRefresh}
+            onOpenWorkspaceReview={workspaceReview.openReview}
             hideBrand={true}
           />
 
@@ -334,6 +343,23 @@ export const App: React.FC = () => {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+      />
+
+      {/* Workspace Change Explainer & Cross-Repository Impact Review Modal */}
+      <WorkspaceReviewModal
+        isOpen={workspaceReview.isOpen}
+        activeRepoPath={repoPath || activeRepoPath}
+        workspaceRepoPaths={activeWorkspace.repoPaths}
+        reviewResult={workspaceReview.reviewResult}
+        loading={workspaceReview.loading}
+        error={workspaceReview.error}
+        mode={workspaceReview.mode}
+        customPrompt={workspaceReview.customPrompt}
+        onClose={workspaceReview.closeReview}
+        onSetMode={workspaceReview.setMode}
+        onSetCustomPrompt={workspaceReview.setCustomPrompt}
+        onRunReview={workspaceReview.runReview}
+        onClearReview={workspaceReview.clearReview}
       />
     </div>
   );

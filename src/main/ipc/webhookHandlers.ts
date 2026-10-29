@@ -8,6 +8,8 @@ import type {
   ResolvedWebhookConfig,
   WebhookConfigDefaults,
   ResolvedAIConfig,
+  WorkspaceReviewOptions,
+  WorkspaceReviewResult,
 } from '../../shared/types';
 import { gitService } from '../git/gitService';
 import { aiService } from '../services/ai/aiService';
@@ -100,6 +102,16 @@ export function handleGetAIConfig(): IPCResult<ResolvedAIConfig> {
 }
 
 /**
+ * IPC handler for 'ai:review-workspace'.
+ * Analyzes active repository changes for cross-repository workspace impact and plain-English review.
+ */
+export async function handleReviewWorkspace(
+  options: WorkspaceReviewOptions
+): Promise<IPCResult<WorkspaceReviewResult>> {
+  return await aiService.reviewWorkspaceChanges(options);
+}
+
+/**
  * Main webhook generate commit handler.
  * Dispatches staged diff queried via gitService.getAllStagedDiff using HTTP method: 'POST'.
  * Delegates dispatch to aiService.generateCommitMessage.
@@ -135,6 +147,7 @@ export function registerWebhookHandlers(): void {
     ipcMain.removeHandler(IPC_CHANNELS.SETTINGS_GET_WEBHOOK_CONFIG);
     ipcMain.removeHandler(IPC_CHANNELS.AI_GENERATE_COMMIT);
     ipcMain.removeHandler(IPC_CHANNELS.SETTINGS_GET_AI_CONFIG);
+    ipcMain.removeHandler(IPC_CHANNELS.AI_REVIEW_WORKSPACE);
   }
 
   ipcMain.handle(
@@ -162,6 +175,13 @@ export function registerWebhookHandlers(): void {
     IPC_CHANNELS.SETTINGS_GET_AI_CONFIG,
     async () => {
       return handleGetAIConfig();
+    }
+  );
+
+  ipcMain.handle(
+    IPC_CHANNELS.AI_REVIEW_WORKSPACE,
+    async (_event, options: WorkspaceReviewOptions) => {
+      return await handleReviewWorkspace(options);
     }
   );
 }

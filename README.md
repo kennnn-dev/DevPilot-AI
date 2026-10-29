@@ -25,6 +25,11 @@ DevPilot AI is a modern desktop application built with Electron, React, TypeScri
   - Real line counters and syntax-highlighted additions (`+`) and deletions (`-`).
   - Dual line numbering gutters showing old and new line numbers.
   - Handles binary files and empty files cleanly.
+- **Workspace Change Explainer & Cross-Repository Impact Review**:
+  - **Plain-English ("Non-Dev Mindset") Mode**: Translates code changes into clear, jargon-free explanations, business impact, and non-technical QA verification steps.
+  - **Cross-Repository Impact Analysis**: Scans sibling repositories in the active workspace to detect whether changes in one repository affect APIs, shared models, exported symbols, or configuration in sibling projects.
+  - **Audience Mode Switcher**: Toggle between Layman (Non-Dev) perspective and Technical Architecture deep-dive.
+  - **One-Click Markdown Export**: Copy complete structured review reports to clipboard for Slack, Jira, PRs, or client updates.
 - **Resizable Studio Layout**:
   - Center workspace expands to full width when no file is selected.
   - Smooth vertical drag handle to resize the Diff Viewer side to your preferred width.

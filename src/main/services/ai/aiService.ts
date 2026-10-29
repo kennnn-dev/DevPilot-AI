@@ -9,6 +9,7 @@ import { generateOllamaCommit, resolveOllamaConfig } from './ollamaClient';
 import { generateOpenAICommit, resolveOpenAIConfig } from './openaiClient';
 import { generateGeminiCommit, resolveGeminiConfig } from './geminiClient';
 import { sanitizeErrorMessage } from './aiUtils';
+import { reviewWorkspaceChanges } from '../workspace/workspaceReviewService';
 import type {
   AIProvider,
   GenerateCommitOptions,
@@ -157,8 +158,11 @@ export async function generateCommitMessage(
   }
 }
 
+export { reviewWorkspaceChanges };
+
 export const aiService = {
   generateCommitMessage,
+  reviewWorkspaceChanges,
   getResolvedAIConfig,
   resolveActiveProvider,
 };

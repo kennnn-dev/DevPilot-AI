@@ -70,6 +70,15 @@ export const IPC_CHANNELS = {
   SETTINGS_GET_AI_CONFIG: 'settings:get-ai-config',
   GET_AI_CONFIG: 'settings:get-ai-config',
 
+  /**
+   * Analyzes active repository changes for cross-repository workspace impact and plain-English review.
+   * Main handler: aiService.reviewWorkspace(options)
+   * Payload: WorkspaceReviewOptions
+   * Return: IPCResult<WorkspaceReviewResult>
+   */
+  AI_REVIEW_WORKSPACE: 'ai:review-workspace',
+  REVIEW_WORKSPACE: 'ai:review-workspace',
+
   // Convenience aliases matching shorthand conventions
   OPEN_DIRECTORY: 'dialog:open-directory',
   GET_STATUS: 'git:get-status',

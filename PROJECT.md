@@ -119,6 +119,9 @@ Every feature from initial and follow-up survey phases is enumerated here with i
 | 54 | F54: Multi-Provider Unit Test Suite | Comprehensive unit tests for AI clients (Ollama, OpenAI, Gemini, Webhook), error handling, secret masking, resolvers, and UI components | M12 | Survey (explorer #3) |
 | 55 | F55: Multi-Provider Integration Dispatch Test Suite | Automated integration tests with mock HTTP endpoints for all 4 providers executing real Git staged diff generation | M12 | Survey (spec_miner #1) |
 | 56 | F56: Zero-Regression Test & Typecheck Verification | 100% test pass on Vitest test suite (`npm test`) and 0 compiler errors (`npm run typecheck`) | M12 | Survey (spec_miner #1) |
+| 57 | F57: Workspace Sibling Repository Scanner | Scans sibling repos in active workspace for modified endpoints, symbols, and env vars | M13 | User Request |
+| 58 | F58: Plain English Non-Dev Review Prompt | AI prompt formulating simple, jargon-free explanations, business impact, and QA verification | M13 | User Request |
+| 59 | F59: Workspace Review Modal & UI | Interactive review modal with Audience Switcher (Non-Dev vs Technical), Sibling Impact Matrix, and Markdown export | M13 | User Request |
 
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
@@ -133,8 +136,9 @@ Every feature from initial and follow-up survey phases is enumerated here with i
 | M8 | Dynamic Commit Generator Dispatch & Final Verification | Refactor `CommitGeneratorPanel.tsx` & `useCommitGenerator.ts` to consume resolved config, remove redundant drawer, handle errors, full `npm test` & `npm run typecheck` verification | M6, M7 | DONE |
 | M9 | Multi-Provider Shared Contracts & Modular Main Process AI Dispatch Architecture | Shared types (`AIProvider`, configs, `GenerateCommitOptions`), IPC channels, `src/main/services/ai/` (`aiService.ts`, `ollamaClient.ts`, `openaiClient.ts`, `geminiClient.ts`, `webhookClient.ts`, `promptBuilder.ts`), 30s timeouts, secret masking, env fallback integration, client unit tests | M8 | DONE |
 | M10 | Multi-Provider Settings Modal & Dynamic Configuration Resolution | Provider selector dropdown (`settings-provider-select`), dynamic fieldset rendering (Webhook, Ollama, OpenAI, Gemini), independent `localStorage` persistence, `.env` fallback resolution, preload bridge typing (`getAIConfig`), SettingsModal unit tests | M9 | DONE |
-| M11 | Transparent Commit Generator Integration & Dynamic Provider Routing | CommitGeneratorPanel active provider badge, unconfigured warning banner, transparent dispatch in `useCommitGenerator.ts`, actionable error presentation (Ollama offline, auth, quota) with retry, UI unit tests | M9, M10 | IN_PROGRESS |
-| M12 | Multi-Provider Integration Testing & Final E2E Verification | End-to-end integration test suite (`tests/integration/multiProviderDispatch.test.ts`) with mock HTTP servers for all 4 providers, full Vitest test pass (`npm test`), zero TypeScript compiler errors (`npm run typecheck`) | M9, M10, M11 | PLANNED |
+| M11 | Transparent Commit Generator Integration & Dynamic Provider Routing | CommitGeneratorPanel active provider badge, unconfigured warning banner, transparent dispatch in `useCommitGenerator.ts`, actionable error presentation (Ollama offline, auth, quota) with retry, UI unit tests | M9, M10 | DONE |
+| M12 | Multi-Provider Integration Testing & Final E2E Verification | End-to-end integration test suite (`tests/integration/multiProviderDispatch.test.ts`) with mock HTTP servers for all 4 providers, full Vitest test pass (`npm test`), zero TypeScript compiler errors (`npm run typecheck`) | M9, M10, M11 | DONE |
+| M13 | Workspace Change Explainer & Cross-Repository Impact Review | Workspace sibling repo scanner, plain-English non-dev prompt engineering, cross-repo impact matrix, audience mode switcher, full unit test suite | M9, M10 | DONE |
 
 ## Interface Contracts
 

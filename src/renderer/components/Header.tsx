@@ -8,6 +8,7 @@ import {
   GitBranch,
   Check,
   X,
+  Sparkles,
 } from 'lucide-react';
 
 export interface HeaderProps {
@@ -27,6 +28,8 @@ export interface HeaderProps {
   onOpenDirectory?: () => void;
   /** Callback triggered when user clicks Refresh */
   onRefresh: () => void;
+  /** Callback to open the Workspace Change Explainer & Review modal */
+  onOpenWorkspaceReview?: () => void;
   /** Current active workspace name */
   workspaceName?: string;
   /** Number of repositories in active workspace */
@@ -45,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFolder,
   onOpenDirectory,
   onRefresh,
+  onOpenWorkspaceReview,
   workspaceName = 'Default Workspace',
   repoCount = 0,
   onRenameWorkspace,
@@ -168,6 +172,19 @@ export const Header: React.FC<HeaderProps> = ({
             <GitBranch className="branch-icon" size={13} aria-hidden="true" />
             <span className="branch-name">{displayBranch}</span>
           </div>
+        )}
+
+        {onOpenWorkspaceReview && repoPath && (
+          <button
+            type="button"
+            className="btn-explain-review"
+            onClick={onOpenWorkspaceReview}
+            data-testid="open-workspace-review-btn"
+            title="Review workspace changes & explain in plain English"
+          >
+            <Sparkles size={13} aria-hidden="true" />
+            <span>Explain & Review</span>
+          </button>
         )}
 
         <button

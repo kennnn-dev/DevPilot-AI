@@ -16,6 +16,7 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist/main',
+            emptyOutDir: true,
             rollupOptions: {
               external: ['electron'],
             },
@@ -30,6 +31,7 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist/preload',
+            emptyOutDir: true,
             lib: {
               entry: resolve(__dirname, 'src/preload/index.ts'),
               formats: ['cjs'],

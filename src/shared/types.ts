@@ -356,6 +356,88 @@ export interface GeneratedCommitResult {
 export type GenerateCommitResult = GeneratedCommitResult;
 
 /**
+ * Audience perspective mode for workspace change reviews.
+ * - 'plain': Non-developer mindset (layman friendly, zero technical jargon, focused on business logic and user impact)
+ * - 'technical': Developer mindset (focusing on system architecture, endpoints, and code specifics)
+ */
+export type ReviewAudienceMode = 'plain' | 'technical';
+
+/**
+ * Impact assessment severity for a sibling repository in a multi-repo workspace.
+ */
+export type ImpactSeverity = 'safe' | 'potential_impact' | 'breaking_risk';
+
+/**
+ * Assessed impact of changes on a sibling repository in the active workspace.
+ */
+export interface SiblingRepoImpact {
+  /** Absolute directory path to sibling repository */
+  repoPath: string;
+  /** Basename or package name of the repository */
+  repoName: string;
+  /** Impact level: safe (isolated), potential impact, or breaking risk */
+  status: ImpactSeverity;
+  /** Layman or technical explanation of how/why this sibling repo is affected or unaffected */
+  summary: string;
+  /** Symbols, API endpoints, or environment variables detected or relevant */
+  affectedSymbolsOrEndpoints?: string[];
+  /** File paths in the sibling repo referencing the modified items */
+  affectedFiles?: string[];
+}
+
+/**
+ * Structured result of a Workspace Change Review & Cross-Repository Impact Analysis.
+ */
+export interface WorkspaceReviewResult {
+  /** Active repository where changes originated */
+  activeRepoPath: string;
+  /** Active repository name */
+  activeRepoName: string;
+  /** Audience perspective mode used for this review */
+  mode: ReviewAudienceMode;
+  /** Plain-English summary explaining what changed in simple, non-developer terms */
+  plainEnglishSummary: string;
+  /** Why this change matters from a product, user, or business standpoint */
+  whyItMatters: string;
+  /** Concrete testing / verification instructions understandable by non-engineers or QA */
+  suggestedVerification: string[];
+  /** Optional technical details for developer audience */
+  technicalDetails?: string;
+  /** Impact evaluation across all sibling repositories in the workspace */
+  crossRepoImpacts: SiblingRepoImpact[];
+  /** Overall workspace impact status */
+  overallImpactStatus: ImpactSeverity;
+  /** Raw AI model response */
+  rawResponse?: string;
+}
+
+/**
+ * Options for triggering a Workspace Review & Impact Analysis.
+ */
+export interface WorkspaceReviewOptions {
+  /** Repository path containing the changes to review */
+  activeRepoPath: string;
+  /** List of all repository paths present in the active workspace */
+  workspaceRepoPaths: string[];
+  /** Audience mode (default: 'plain') */
+  mode?: ReviewAudienceMode;
+  /** Active AI provider override */
+  provider?: AIProvider;
+  /** Custom user instruction or question */
+  customPrompt?: string;
+  // Provider overrides
+  webhookUrl?: string;
+  webhookToken?: string;
+  ollamaBaseUrl?: string;
+  ollamaModel?: string;
+  openaiApiKey?: string;
+  openaiModel?: string;
+  openaiBaseUrl?: string;
+  geminiApiKey?: string;
+  geminiModel?: string;
+}
+
+/**
  * Safe, read-only API exposed to the Renderer window via Preload contextBridge.
  */
 export interface DevPilotAPI {
@@ -396,6 +478,12 @@ export interface DevPilotAPI {
    * @param options Target repository and provider configuration
    */
   generateCommitMessage: (options: GenerateCommitOptions) => Promise<IPCResult<GeneratedCommitResult>>;
+
+  /**
+   * Analyzes active repository changes for cross-repository workspace impact and plain-English review.
+   * @param options Target repository, workspace repos, audience mode, and provider configuration
+   */
+  reviewWorkspaceChanges?: (options: WorkspaceReviewOptions) => Promise<IPCResult<WorkspaceReviewResult>>;
 
   /**
    * Queries environment-configured webhook defaults and active resolution from Main process.

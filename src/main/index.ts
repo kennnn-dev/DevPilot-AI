@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell, session } from 'electron';
+import { app, BrowserWindow, shell, session, Menu } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -80,6 +80,7 @@ export function getWindowSecurityOptions(preloadPath: string): Electron.BrowserW
     minWidth: 900,
     minHeight: 600,
     show: false, // Prevent white flash before content is loaded
+    autoHideMenuBar: true, // Hide default native top menu bar (File, Edit, View, Window, Help)
     backgroundColor: '#0f172a', // Sleek dark slate background
     webPreferences: {
       preload: preloadPath,
@@ -226,6 +227,12 @@ export function createWindow(): BrowserWindow {
   const options = getWindowSecurityOptions(preloadPath);
 
   mainWindow = new BrowserWindow(options);
+
+  // Remove native menu bar (File, Edit, View, Window, Help)
+  mainWindow.setMenuBarVisibility(false);
+  if (typeof Menu?.setApplicationMenu === 'function') {
+    Menu.setApplicationMenu(null);
+  }
 
   // Apply WebContents security guards
   configureWebContentsSecurity(mainWindow.webContents);
