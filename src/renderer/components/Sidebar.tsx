@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   GitBranch,
   ChevronUp,
@@ -15,6 +15,7 @@ import {
   Filter,
   RotateCcw,
   Check,
+  X,
 } from 'lucide-react';
 import type { GitFileStatus } from '../../shared/types';
 import FileList from './FileList';
@@ -64,6 +65,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [isCommitAssistantOpen, setIsCommitAssistantOpen] = useState(false);
   const [terminalLaunching, setTerminalLaunching] = useState(false);
   const [filterQuery, setFilterQuery] = useState('');
+  const filterInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        filterInputRef.current?.focus();
+        filterInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const filterFn = (f: GitFileStatus) => {
     if (!filterQuery.trim()) return true;
@@ -207,22 +221,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             )}
 
-            {/* Files List Toolbar matching Image 1 */}
+            {/* Files List Toolbar: Left-aligned search bar + count badge + actions */}
             <div className="files-section-bar">
-              <div className="files-bar-left">
-                <span className="files-bar-title">Files</span>
-                <span className="files-count-badge">{totalChanges}</span>
-              </div>
-
-              <div className="files-filter-box">
-                <Filter size={12} className="filter-icon" />
-                <input
-                  type="text"
-                  className="files-filter-input"
-                  placeholder="Filter changed files (⌘F)"
-                  value={filterQuery}
-                  onChange={(e) => setFilterQuery(e.target.value)}
-                />
+              <div className="files-bar-left-group">
+                <div className="files-filter-box">
+                  <Filter size={12} className="filter-icon" />
+                  <input
+                    ref={filterInputRef}
+                    type="text"
+                    className="files-filter-input"
+                    placeholder="Filter changed files (⌘F)"
+                    value={filterQuery}
+                    onChange={(e) => setFilterQuery(e.target.value)}
+                  />
+                  {filterQuery && (
+                    <button
+                      type="button"
+                      className="files-filter-clear"
+                      onClick={() => setFilterQuery('')}
+                      title="Clear search filter"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+                <span className="files-count-badge" data-testid="total-changes-count">
+                  {totalChanges}
+                </span>
               </div>
 
               <div className="files-bar-actions">
@@ -246,9 +271,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
 
-            {/* Categorized File Sections */}
+            {/* Categorized File Sections: 3 Separate Containers for Staged, Changes, Untracked */}
             <div className="file-sections-container">
-              {/* Staged Changes Section */}
+              {/* Container 1: Staged Changes Section */}
               <FileList
                 title="STAGED CHANGES"
                 count={filteredStaged.length}
@@ -257,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 selectedFile={selectedFile}
                 isSelectable={true}
                 defaultExpanded={true}
-                emptyText="No staged changes"
+                emptyText="No staged changes yet. Select files below or click &quot;Stage All&quot; to include them in the commit."
                 onSelectFile={(f) => onSelectFile(f)}
                 headerAction={
                   <button
@@ -272,7 +297,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }
               />
 
-              {/* Unstaged Changes Section */}
+              {/* Container 2: Changes Section */}
               <FileList
                 title="CHANGES"
                 count={filteredUnstaged.length}
@@ -285,7 +310,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectFile={(f) => onSelectFile(f, 'unstaged')}
               />
 
-              {/* Untracked Files Section */}
+              {/* Container 3: Untracked Files Section */}
               <FileList
                 title="UNTRACKED FILES"
                 count={filteredUntracked.length}

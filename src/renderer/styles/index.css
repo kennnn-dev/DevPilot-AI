@@ -879,20 +879,28 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px 18px;
-  gap: 12px;
+  gap: 14px;
 }
 
-/* Selected Repo Header Card */
+/* Containerized Repository Card matching Image */
 .repo-status-card {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 10px 14px;
+  border-radius: 10px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.repo-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .repo-status-card-header {
@@ -1091,8 +1099,17 @@ html, body, #root {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 12px;
-  padding: 6px 4px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.files-bar-left-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .files-bar-left {
@@ -1118,20 +1135,36 @@ html, body, #root {
 }
 
 .files-filter-box {
-  flex: 1;
-  max-width: 320px;
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(15, 23, 42, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   padding: 4px 10px;
+  width: 220px;
+  transition: all 0.2s ease;
 }
 
 .files-filter-box:focus-within {
   border-color: rgba(59, 130, 246, 0.5);
   box-shadow: 0 0 8px rgba(59, 130, 246, 0.2);
+  width: 260px;
+}
+
+.files-filter-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: 1px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.files-filter-clear:hover {
+  color: var(--text-main);
 }
 
 .files-filter-box .filter-icon {
@@ -1206,40 +1239,56 @@ html, body, #root {
 
 /* Categorized File Sections */
 .file-sections-container {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
 }
 
+/* Each file category (Staged, Changes, Untracked) is its OWN separate container card */
 .file-section {
   display: flex;
   flex-direction: column;
+  background: rgba(13, 21, 38, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: border-color 0.15s ease;
+}
+
+.file-section:hover {
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px;
+  padding: 8px 12px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.5px;
   color: var(--text-secondary);
   cursor: pointer;
-  border-radius: 6px;
-  transition: background-color 0.15s;
+  background: rgba(15, 23, 42, 0.45);
+  user-select: none;
+  transition: background-color 0.15s ease;
 }
 
 .section-header:hover {
   background-color: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
 }
 
 .section-header-left {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.section-chevron {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .section-count-badge {
@@ -1261,23 +1310,41 @@ html, body, #root {
   color: #38bdf8;
 }
 
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .btn-stage-section {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   color: #38bdf8;
   cursor: pointer;
   background: transparent;
   padding: 2px 6px;
   border-radius: 4px;
+  transition: all 0.15s ease;
 }
 
 .btn-stage-section:hover {
-  text-decoration: underline;
-  background: rgba(6, 182, 212, 0.08);
+  background: rgba(6, 182, 212, 0.12);
+  color: #7dd3fc;
 }
 
 .section-count {
   font-size: 10px;
+  color: var(--text-muted);
+}
+
+.section-body {
+  padding: 6px 6px 8px 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.section-empty {
+  padding: 10px 14px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
@@ -1289,9 +1356,8 @@ html, body, #root {
   font-size: 12px;
   color: var(--text-muted);
   background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed rgba(255, 255, 255, 0.06);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
   border-radius: 6px;
-  margin: 4px 0;
 }
 
 .staged-empty-hint .info-icon {
@@ -1304,21 +1370,20 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 2px 0 6px 8px;
+  padding: 2px 0 2px 2px;
 }
 
 .file-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 6px 8px 6px 12px;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.15s ease;
   font-size: 12px;
   font-family: var(--font-mono);
   color: var(--text-secondary);
-  border-left: 2px solid transparent;
   position: relative;
 }
 
@@ -1333,12 +1398,52 @@ html, body, #root {
   font-weight: 600;
 }
 
-.file-border-modified {
-  border-left-color: #f59e0b;
+/* Left Accent Indicator Bar matching Image 3 */
+.file-row-indicator {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background-color: transparent;
+  transition: background-color 0.15s ease;
 }
 
-.file-border-untracked {
-  border-left-color: #06b6d4;
+.file-item.file-border-modified .file-row-indicator {
+  background-color: #f59e0b; /* Solid yellow vertical accent matching Image 3 */
+}
+
+.file-item.file-border-untracked .file-row-indicator {
+  background-color: #06b6d4; /* Solid cyan vertical accent matching Image 3 */
+}
+
+.file-item.file-border-secret .file-row-indicator {
+  background-color: #f43f5e;
+}
+
+.file-item.file-border-added .file-row-indicator {
+  background-color: #10b981;
+}
+
+.file-item.file-border-deleted .file-row-indicator {
+  background-color: #ef4444;
+}
+
+/* Checkbox box matching Image 2 */
+.file-row-checkbox {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(15, 23, 42, 0.6);
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.file-item:hover .file-row-checkbox {
+  border-color: rgba(59, 130, 246, 0.7);
 }
 
 .file-border-secret {
@@ -4337,6 +4442,234 @@ html, body, #root {
 
 .log-line.log-warn {
   color: #facc15;
+}
+
+/* ==========================================================================
+   Team Collaboration Navigation & Modal
+   ========================================================================= */
+.nav-team-badge {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #38bdf8;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px;
+  margin-left: auto;
+}
+
+.team-modal-backdrop {
+  z-index: 1000;
+}
+
+.team-modal-container {
+  background: #0d1526;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 95vw;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.team-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #1e293b;
+  padding-bottom: 14px;
+}
+
+.team-modal-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.team-modal-icon-badge {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(6, 182, 212, 0.12);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-modal-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.team-modal-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+}
+
+.team-modal-close {
+  color: #64748b;
+  padding: 4px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.team-modal-close:hover {
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.team-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.team-list-heading {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-member-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #1e293b;
+  border-radius: 8px;
+  transition: border-color 0.15s ease;
+}
+
+.team-member-row:hover {
+  border-color: #334155;
+}
+
+.team-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.team-avatar.bg-emerald {
+  background: #059669;
+}
+
+.team-avatar.bg-purple {
+  background: #7c3aed;
+}
+
+.team-avatar.bg-blue {
+  background: #2563eb;
+}
+
+.team-status-dot {
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid #0d1526;
+}
+
+.team-status-dot.status-active,
+.team-status-dot.status-online {
+  background: #10b981;
+}
+
+.team-status-dot.status-idle {
+  background: #f59e0b;
+}
+
+.team-member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.team-member-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-member-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.team-member-role {
+  font-size: 10px;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.team-member-activity {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.team-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #1e293b;
+  padding-top: 14px;
+}
+
+.btn-team-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.btn-team-invite {
+  background: #0284c7;
+  color: #fff;
+  border: 1px solid #38bdf8;
+}
+
+.btn-team-invite:hover {
+  background: #0369a1;
+}
+
+.btn-team-sync {
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  border: 1px solid #1e293b;
+}
+
+.btn-team-sync:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
 }
 
 

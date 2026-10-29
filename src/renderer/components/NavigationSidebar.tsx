@@ -12,8 +12,10 @@ import {
   Trash2,
   Sparkles,
   GitBranch,
+  Users,
 } from 'lucide-react';
 import type { Workspace } from '../../shared/types';
+import TeamModal from './TeamModal';
 
 export interface NavigationSidebarProps {
   workspaces: Workspace[];
@@ -51,6 +53,9 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   const [newWsName, setNewWsName] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameVal, setRenameVal] = useState('');
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
+
+  const activeWs = workspaces.find((w) => w.id === activeWorkspaceId);
 
   const handleStartCreate = () => {
     setNewWsName('');
@@ -125,6 +130,17 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
             <span className="nav-pro-badge">PRO</span>
           </button>
         )}
+        <button
+          type="button"
+          className="nav-item nav-item-team"
+          title="Team Collaboration & Members"
+          data-testid="nav-team-btn"
+          onClick={() => setIsTeamModalOpen(true)}
+        >
+          <Users size={16} className="nav-item-icon text-cyan" />
+          <span>Team</span>
+          <span className="nav-team-badge">3</span>
+        </button>
         <button
           type="button"
           className={`nav-item ${isSettingsActive ? 'nav-item-active' : ''}`}
@@ -294,6 +310,13 @@ export const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
           );
         })}
       </div>
+
+      {/* Team Collaboration Modal */}
+      <TeamModal
+        isOpen={isTeamModalOpen}
+        onClose={() => setIsTeamModalOpen(false)}
+        workspaceName={activeWs?.name}
+      />
     </aside>
   );
 };

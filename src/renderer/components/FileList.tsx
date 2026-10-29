@@ -304,7 +304,17 @@ export const FileList: React.FC<FileListProps> = ({
         </div>
         <div className="section-header-right" onClick={(e) => e.stopPropagation()}>
           {headerAction}
-          {sectionId !== 'staged' && count > 0 && (
+          {sectionId === 'staged' && count > 0 && (
+            <button type="button" className="btn-stage-section">
+              Unstage all
+            </button>
+          )}
+          {sectionId === 'unstaged' && count > 0 && (
+            <button type="button" className="btn-stage-section">
+              Stage section ✓
+            </button>
+          )}
+          {sectionId === 'untracked' && count > 0 && (
             <button type="button" className="btn-stage-section">
               Stage section
             </button>
@@ -385,8 +395,11 @@ export const FileList: React.FC<FileListProps> = ({
                       }
                     }}
                   >
-                    {/* File row accent indicator */}
+                    {/* File row accent indicator matching Image 3 */}
                     <div className="file-row-indicator" />
+
+                    {/* File row checkbox matching Image 2 */}
+                    <span className="file-row-checkbox" aria-hidden="true" />
 
                     {/* File icon with colorful extension styling */}
                     <Icon size={14} className={`file-row-icon ${iconClass}`} />
