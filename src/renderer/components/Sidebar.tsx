@@ -245,7 +245,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </button>
                   )}
                 </div>
-                <span className="files-count-badge" data-testid="total-changes-count">
+                <span className="files-count-badge">
                   {totalChanges}
                 </span>
               </div>
@@ -282,7 +282,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 selectedFile={selectedFile}
                 isSelectable={true}
                 defaultExpanded={true}
-                emptyText="No staged changes yet. Select files below or click &quot;Stage All&quot; to include them in the commit."
+                emptyText="No staged changes"
                 onSelectFile={(f) => onSelectFile(f)}
                 headerAction={
                   <button
