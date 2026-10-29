@@ -59,6 +59,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const totalChanges = staged.length + unstaged.length + untracked.length;
   const [isRepoCardExpanded, setIsRepoCardExpanded] = useState(true);
   const [isCommitAssistantOpen, setIsCommitAssistantOpen] = useState(false);
+  const [terminalLaunching, setTerminalLaunching] = useState(false);
+
+  const handleOpenTerminal = async () => {
+    if (!repoPath) return;
+    setTerminalLaunching(true);
+    try {
+      if (window.devPilot && typeof window.devPilot.openTerminal === 'function') {
+        const res = await window.devPilot.openTerminal(repoPath);
+        if (!res.success && res.error) {
+          console.warn('[DevPilot Terminal]', res.error);
+        }
+      }
+    } catch (err) {
+      console.error('[DevPilot Terminal]', err);
+    } finally {
+      setTerminalLaunching(false);
+    }
+  };
 
   const repoName = repoPath
     ? repoPath.split(/[\/\\]/).filter(Boolean).pop() || repoPath
@@ -263,10 +281,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   className="btn-repo-action"
-                  title="Open Repository in Terminal"
+                  title={repoPath ? `Open ${repoPath} in native terminal` : 'Open Repository in Terminal'}
+                  data-testid="repo-action-open-terminal"
+                  disabled={!repoPath || terminalLaunching}
+                  onClick={handleOpenTerminal}
                 >
                   <Terminal size={13} />
-                  <span>Open in Terminal</span>
+                  <span>{terminalLaunching ? 'Opening...' : 'Open in Terminal'}</span>
                 </button>
                 <button
                   type="button"

@@ -9,7 +9,9 @@ import DiffViewer from './components/DiffViewer';
 import ErrorBanner from './components/ErrorBanner';
 import SettingsModal from './components/SettingsModal/SettingsModal';
 import WorkspaceReviewModal from './components/WorkspaceReview/WorkspaceReviewModal';
+import ServicesControlBoardModal from './components/ServicesControlBoard/ServicesControlBoardModal';
 import { useWorkspaceReview } from './hooks/useWorkspaceReview';
+import { useServicesManager } from './hooks/useServicesManager';
 
 /**
  * DevPilot AI Main Studio Component.
@@ -61,6 +63,14 @@ export const App: React.FC = () => {
   const workspaceReview = useWorkspaceReview({
     activeRepoPath: repoPath || activeRepoPath,
     workspaceRepoPaths: activeWorkspace.repoPaths,
+  });
+
+  // Universal Service Control Board & Process Runner hook (strictly scoped per workspace)
+  const servicesManager = useServicesManager({
+    workspaceId: activeWorkspace.id,
+    workspaceName: activeWorkspace.name,
+    workspaceRepoPaths: activeWorkspace.repoPaths,
+    activeWorkspacePath: repoPath || activeRepoPath || activeWorkspace.repoPaths[0] || null,
   });
 
   // User-resizable width for the diff panel (persisted locally)
@@ -257,6 +267,9 @@ export const App: React.FC = () => {
             onOpenFolder={handleOpenDirectory}
             onRefresh={handleRefresh}
             onOpenWorkspaceReview={workspaceReview.openReview}
+            onOpenServices={servicesManager.openModal}
+            runningServicesCount={servicesManager.runningCount}
+            totalServicesCount={servicesManager.services.length}
             hideBrand={true}
           />
 
@@ -360,6 +373,36 @@ export const App: React.FC = () => {
         onSetCustomPrompt={workspaceReview.setCustomPrompt}
         onRunReview={workspaceReview.runReview}
         onClearReview={workspaceReview.clearReview}
+      />
+
+      {/* Universal Service Control Board & Process Runner Modal */}
+      <ServicesControlBoardModal
+        isOpen={servicesManager.isOpen}
+        onClose={servicesManager.closeModal}
+        workspaceName={servicesManager.workspaceName}
+        scannedPath={servicesManager.scannedPath}
+        services={servicesManager.services}
+        filteredServices={servicesManager.filteredServices}
+        runningCount={servicesManager.runningCount}
+        logs={servicesManager.logs}
+        allLogs={servicesManager.allLogs}
+        activeLogServiceId={servicesManager.activeLogServiceId}
+        onSelectLogService={servicesManager.setActiveLogServiceId}
+        searchQuery={servicesManager.searchQuery}
+        onSearchChange={servicesManager.setSearchQuery}
+        loading={servicesManager.loading}
+        actionLoadingId={servicesManager.actionLoadingId}
+        error={servicesManager.error}
+        onRescan={() => servicesManager.discover()}
+        onSelectFolder={servicesManager.selectFolder}
+        onUpdatePort={servicesManager.updateServicePort}
+        onStartService={servicesManager.startService}
+        onStopService={servicesManager.stopService}
+        onRestartService={servicesManager.restartService}
+        onStartAll={servicesManager.startAll}
+        onStopAll={servicesManager.stopAll}
+        onClearLogs={servicesManager.clearLogs}
+        onOpenTerminal={servicesManager.openTerminalForService}
       />
     </div>
   );

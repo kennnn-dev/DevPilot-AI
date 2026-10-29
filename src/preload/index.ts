@@ -12,6 +12,8 @@ import type {
   ResolvedAIConfig,
   WorkspaceReviewOptions,
   WorkspaceReviewResult,
+  WorkspaceService,
+  ServiceLogEntry,
 } from '../shared/types';
 
 /**
@@ -135,6 +137,141 @@ export const api: DevPilotAPI = {
       };
     }
     return await ipcRenderer.invoke(IPC_CHANNELS.AI_REVIEW_WORKSPACE, options);
+  },
+
+  /**
+   * Opens the OS native terminal emulator at the specified directory path.
+   */
+  openTerminal: async (targetPath: string): Promise<IPCResult<boolean>> => {
+    if (typeof targetPath !== 'string' || targetPath.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Target directory path must be a non-empty string.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.SYSTEM_OPEN_TERMINAL, targetPath.trim());
+  },
+
+  /**
+   * Discovers runnable services across the active workspace repositories or directory path.
+   */
+  discoverServices: async (target: string | string[]): Promise<IPCResult<WorkspaceService[]>> => {
+    if (
+      (!target || (typeof target !== 'string' && !Array.isArray(target))) ||
+      (typeof target === 'string' && target.trim().length === 0) ||
+      (Array.isArray(target) && target.length === 0)
+    ) {
+      return {
+        success: false,
+        error: 'Target must be a non-empty path string or array of repository paths.',
+      };
+    }
+    const cleanTarget = typeof target === 'string' ? target.trim() : target.map((p) => p.trim()).filter(Boolean);
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_DISCOVER, cleanTarget);
+  },
+
+  /**
+   * Starts a service by ID.
+   */
+  startService: async (serviceId: string): Promise<IPCResult<WorkspaceService>> => {
+    if (typeof serviceId !== 'string' || serviceId.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Service ID must be a non-empty string.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_START, serviceId.trim());
+  },
+
+  /**
+   * Stops a running service by ID.
+   */
+  stopService: async (serviceId: string): Promise<IPCResult<WorkspaceService>> => {
+    if (typeof serviceId !== 'string' || serviceId.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Service ID must be a non-empty string.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_STOP, serviceId.trim());
+  },
+
+  /**
+   * Restarts a service by ID.
+   */
+  restartService: async (serviceId: string): Promise<IPCResult<WorkspaceService>> => {
+    if (typeof serviceId !== 'string' || serviceId.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Service ID must be a non-empty string.',
+      };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_RESTART, serviceId.trim());
+  },
+
+  /**
+   * Starts all discovered services.
+   */
+  startAllServices: async (): Promise<IPCResult<WorkspaceService[]>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_START_ALL);
+  },
+
+  /**
+   * Gracefully stops all active services.
+   */
+  stopAllServices: async (): Promise<IPCResult<WorkspaceService[]>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_STOP_ALL);
+  },
+
+  /**
+   * Queries buffered output logs for a service or all services.
+   */
+  getServiceLogs: async (serviceId?: string): Promise<IPCResult<ServiceLogEntry[]>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_GET_LOGS, serviceId);
+  },
+
+  /**
+   * Clears buffered logs for a service or all services.
+   */
+  clearServiceLogs: async (serviceId?: string): Promise<IPCResult<boolean>> => {
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_CLEAR_LOGS, serviceId);
+  },
+
+  /**
+   * Dynamically updates the runtime port or command configuration for a service.
+   */
+  updateServiceConfig: async (
+    serviceId: string,
+    updates: { port?: number | string; command?: string }
+  ): Promise<IPCResult<WorkspaceService>> => {
+    if (typeof serviceId !== 'string' || !serviceId.trim()) {
+      return { success: false, error: 'Service ID must be a non-empty string.' };
+    }
+    return await ipcRenderer.invoke(IPC_CHANNELS.SERVICES_UPDATE_CONFIG, { serviceId, updates });
+  },
+
+  /**
+   * Subscribes to real-time service status changes.
+   */
+  onServiceStatusChanged: (callback: (service: WorkspaceService) => void): (() => void) => {
+    if (typeof ipcRenderer?.on !== 'function') return () => {};
+    const listener = (_event: unknown, service: WorkspaceService) => callback(service);
+    ipcRenderer.on('services:status-changed', listener);
+    return () => {
+      ipcRenderer.removeListener('services:status-changed', listener);
+    };
+  },
+
+  /**
+   * Subscribes to real-time service log output.
+   */
+  onServiceLog: (callback: (log: ServiceLogEntry) => void): (() => void) => {
+    if (typeof ipcRenderer?.on !== 'function') return () => {};
+    const listener = (_event: unknown, log: ServiceLogEntry) => callback(log);
+    ipcRenderer.on('services:log-append', listener);
+    return () => {
+      ipcRenderer.removeListener('services:log-append', listener);
+    };
   },
 };
 

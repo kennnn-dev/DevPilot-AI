@@ -9,6 +9,7 @@ import {
   Check,
   X,
   Sparkles,
+  Server,
 } from 'lucide-react';
 
 export interface HeaderProps {
@@ -30,6 +31,12 @@ export interface HeaderProps {
   onRefresh: () => void;
   /** Callback to open the Workspace Change Explainer & Review modal */
   onOpenWorkspaceReview?: () => void;
+  /** Callback to open Universal Service Control Board */
+  onOpenServices?: () => void;
+  /** Number of active/running services */
+  runningServicesCount?: number;
+  /** Total number of discovered services */
+  totalServicesCount?: number;
   /** Current active workspace name */
   workspaceName?: string;
   /** Number of repositories in active workspace */
@@ -49,6 +56,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDirectory,
   onRefresh,
   onOpenWorkspaceReview,
+  onOpenServices,
+  runningServicesCount = 0,
+  totalServicesCount = 0,
   workspaceName = 'Default Workspace',
   repoCount = 0,
   onRenameWorkspace,
@@ -184,6 +194,24 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Sparkles size={13} aria-hidden="true" />
             <span>Explain & Review</span>
+          </button>
+        )}
+
+        {onOpenServices && (
+          <button
+            type="button"
+            className="btn-services-header"
+            onClick={onOpenServices}
+            data-testid="open-services-btn"
+            title="Open Universal Service Control Board & Process Runner"
+          >
+            <Server size={13} aria-hidden="true" />
+            <span>Services</span>
+            {totalServicesCount > 0 && (
+              <span className={`services-header-badge ${runningServicesCount > 0 ? 'badge-running' : ''}`}>
+                {runningServicesCount > 0 ? `${runningServicesCount}` : totalServicesCount}
+              </span>
+            )}
           </button>
         )}
 
